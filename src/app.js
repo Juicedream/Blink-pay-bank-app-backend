@@ -3,6 +3,9 @@ const NotFoundError = require("./middleware/404Handling");
 const ApiError = require("./utils/ApiError");
 const app = express();
 
+// Json parse
+app.use(express.json())
+
 app.use("/api/v1", require("./router"))
 
 
