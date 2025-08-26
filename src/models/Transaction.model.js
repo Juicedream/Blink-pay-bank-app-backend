@@ -32,7 +32,7 @@ const schema = new mongoose.Schema(
     narration: {
       type: String,
       required: true,
-      maxLength: 50,
+      maxLength: 100,
     },
     ref_id: {
       type: String,
@@ -56,7 +56,7 @@ const schema = new mongoose.Schema(
         type: String,
       },
       recipient_acc_num: {
-        type: Number,
+        type: String,
       },
       deviceInfo:{
         userAgent:{

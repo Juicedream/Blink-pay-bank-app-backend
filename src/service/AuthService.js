@@ -3,6 +3,8 @@ const ApiError = require("../utils/ApiError");
 const bcryptjs = require("bcryptjs");
 const JWTService = require("../utils/JwtService");
 const { AccountModel } = require("../models/Account.model");
+const { TransactionModel } = require("../models/Transaction.model");
+const { all } = require("../router/account");
 
 class AuthService {
   static async loginUser(body) {
@@ -55,12 +57,14 @@ class AuthService {
   static async profileUser(user){
     const found_user = await UserModel.findById(user).select("name email acc_type createdAt -_id");
     const found_account = await AccountModel.findOne({userId: user})
-
     if(!found_user){
       throw new ApiError(401, "Profile Not Found")
     }
+    
+    let all_user_transactions = await TransactionModel.find({account_id: found_account._id})
 
-    return found_user, found_account
+
+    return {user: found_account, tran_history: all_user_transactions}
   }
 }
 

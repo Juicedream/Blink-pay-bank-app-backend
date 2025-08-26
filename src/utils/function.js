@@ -27,6 +27,13 @@ function generateAccountNumber(accountType) {
   return Number(startNum + random_8_numbers);
 }
 
+function generateVirtualAccountNumber() {
+  let virtual_starter = ["20", "21", "76"]
+  let random_8_numbers = Math.floor(Math.random() * 9999999) + 9999999;
+  let idx = Math.floor(Math.random() * virtual_starter.length);
+  return Number( virtual_starter[idx] + random_8_numbers );
+}
+
 function generatePin() {
   let pin = Math.floor(Math.random() * 9 * 999) + 999;
   return pin.toString();
@@ -41,6 +48,7 @@ function generateRefId() {
 module.exports = {
     getAge,
     generateAccountNumber,
+    generateVirtualAccountNumber,
     generatePin,
     generateRefId,
 }

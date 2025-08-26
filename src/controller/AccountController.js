@@ -20,6 +20,20 @@ class AccountController {
     res.status(200).send(res_obj);  
   }
 
+  static async bulkTransfer(req, res){
+    const user = req.user;
+    const account = req.account;
+    const res_obj = await AccountService.bulkTransfer(req.body, user, account);
+    res.status(200).send(res_obj);
+  }
+  static async createVirtualAccount(req, res){
+    const user = req.user;
+    const account = req.account;
+    const res_obj = await AccountService.createVirtualAccount(req.body, user, account);
+    res.status(201).send(res_obj);
+  }
+
+  
 
 
 

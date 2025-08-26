@@ -17,7 +17,7 @@ const schema = new mongoose.Schema(
     acc_type: {
       type: String,
       required: true,
-      enum: ["savings", "current"],
+      enum: ["savings", "current", "virtual"],
       defualt: "savings",
     },
     is_onboarded: {
