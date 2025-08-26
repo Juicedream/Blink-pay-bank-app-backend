@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { generatePin } = require("../utils/function");
 // const bcryptjs = require("bcryptjs");
 const schema = new mongoose.Schema(
   {
@@ -68,7 +67,6 @@ const schema = new mongoose.Schema(
     pin: {
         type: String,
         unique: true,
-        default: generatePin(),
         minLength: 4,
         maxLength: 4,
     },

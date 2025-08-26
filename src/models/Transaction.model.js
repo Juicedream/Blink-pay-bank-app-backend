@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { generateRefId } = require("../utils/function");
 
 const schema = new mongoose.Schema(
   {
@@ -36,7 +35,6 @@ const schema = new mongoose.Schema(
     },
     ref_id: {
       type: String,
-      default: generateRefId(),
     },
     balance_before: {
       type: Number,

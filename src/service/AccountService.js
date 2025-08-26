@@ -3,7 +3,7 @@ const { AccountModel } = require("../models/Account.model");
 const { TransactionModel } = require("../models/Transaction.model");
 const { UserModel } = require("../models/User.model");
 const ApiError = require("../utils/ApiError");
-const { getAge, generateAccountNumber } = require("../utils/function");
+const { getAge, generateAccountNumber, generateRefId, generateVirtualAccountNumber, generatePin } = require("../utils/function");
 const eventBus = require("../events/eventBus");
 const { VirtualAccountModel } = require("../models/VirtualAccount.model");
 
@@ -23,6 +23,7 @@ class AccountService {
     }
     let age = getAge(birth_date);
     let acc_number = generateAccountNumber(acc_type);
+    let pin = generatePin();
     // create account
     const newAccount = await AccountModel.create({
       name,
@@ -33,6 +34,7 @@ class AccountService {
       age,
       birth_date,
       bvn,
+      pin,
       docs_upload,
       userId: _id,
       acc_number,
@@ -310,13 +312,14 @@ class AccountService {
     let main_bank_balance_after = main_bank.acc_balance;
 
     //add to transaction
-
+    const ref_id = generateRefId();
     const mainBankTransaction = await TransactionModel.create({
       account_id: main_bank._id,
       tran_type: "credit",
       amount: TRANSFER_TAX,
       currency: "NGN",
       status: "successful",
+      ref_id,
       narration: `Transfer tax for ${name}`,
       balance_before: main_bank_balance_before,
       balance_after: main_bank_balance_after,
@@ -338,6 +341,7 @@ class AccountService {
       currency: "NGN",
       status: "successful",
       narration,
+      ref_id,
       balance_before: sender_balance_before,
       balance_after: sender_balance_after,
       channel: "web",
@@ -358,6 +362,7 @@ class AccountService {
       currency: "NGN",
       status: "successful",
       narration,
+      ref_id,
       balance_before: receiver_balance_before,
       balance_after: receiver_balance_after,
       channel: "web",
@@ -490,6 +495,7 @@ class AccountService {
       const sender = await AccountModel.findOne({ acc_number }).session(
         session
       );
+      const ref_id = generateRefId();
       const sender_balance_before = sender.acc_balance;
       const sender_balance_after = preDebit;
       const senderTran = new TransactionModel({
@@ -498,6 +504,7 @@ class AccountService {
         amount: total_amount_to_be_debited,
         status: "successful",
         narration,
+        ref_id,
         channel: "web",
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
@@ -530,6 +537,7 @@ class AccountService {
           status: "successful",
           narration: `Transfer Tax paid from ${name}`,
           channel: "web",
+          ref_id,
           balance_before: main_bank_balance_before,
           balance_after: main_bank_balance_after,
           meta_data: {
@@ -570,6 +578,7 @@ class AccountService {
           amount,
           status: "successful",
           narration,
+          ref_id,
           channel: "web",
           balance_before,
           balance_after,
@@ -633,11 +642,12 @@ class AccountService {
     if(existing_v_acc){
       throw new ApiError(400, "Cannot create new virtual account - " + existing_v_acc.name + " has already been generated on your account!");
     }
-
+    const acc_number = generateVirtualAccountNumber();
     //creating a virtual account,
     const newAccount = await VirtualAccountModel.create({
       name: ACCOUNT_NAME,
       userId: _id,
+      acc_number,
       amount: Number(amount) + TRANSFER_TAX,
       expiresAt: new Date(Date.now() + EXPIRES_IN * 60 * 1000) // expires in the expires_in minutes
     });

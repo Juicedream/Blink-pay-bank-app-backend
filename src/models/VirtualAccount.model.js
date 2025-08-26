@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { generatePin, generateVirtualAccountNumber } = require("../utils/function");
 // const bcryptjs = require("bcryptjs");
 const schema = new mongoose.Schema(
   {
@@ -32,7 +31,6 @@ const schema = new mongoose.Schema(
     acc_number: {
       type: Number,
       required: true,
-      default: generateVirtualAccountNumber()
     },
   
     bank_name: {
