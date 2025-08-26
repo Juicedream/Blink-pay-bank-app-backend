@@ -10,25 +10,35 @@ const server = http.createServer(app);
 // Json parse
 app.use(express.json())
 
+
+
 const allowedOrigins = [
-   // local backend
-  "http://localhost:8000", // local frontend from payverge
-  "https://blink-pay.vercel.app", // production frontend
+  "https://blink-pay.vercel.app", // production
+  /^http:\/\/localhost:\d+$/, // allow any localhost port
+  /^http:\/\/127\.0\.0\.1:\d+$/, // allow 127.0.0.1 ports
+  /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // allow LAN IPs (teammates in dev)
 ];
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
+
+      // check if origin matches any string or regex
+      if (
+        allowedOrigins.some((o) =>
+          o instanceof RegExp ? o.test(origin) : o === origin
+        )
+      ) {
         return callback(null, true);
       } else {
-        return callback(new Error("Not allowed by CORS"));
+        return callback(new Error("Not allowed by CORS: " + origin));
       }
     },
-    credentials: true, // if you need cookies/auth headers
+    credentials: true,
   })
 );
+
 app.use(morgan("dev"))
 
 app.use("/api/v1", require("./router"))
