@@ -32,6 +32,12 @@ class AccountController {
     const res_obj = await AccountService.createVirtualAccount(req.body, user, account);
     res.status(201).send(res_obj);
   }
+  static async createDigitalCard(req, res){
+    const user = req.user;
+    const account = req.account;
+    const res_obj = await AccountService.createDigitalCard(req.body, user, account);
+    res.status(201).send(res_obj);
+  }
 
   
 

@@ -660,9 +660,11 @@ class AccountService {
   }
 
   static async createDigitalCard(body, user, account){
-    const {} = body;
-    const {} = account;
-    const {} = user;
+    const {card_name, card_type} = body;
+    const {acc_balance, acc_number} = account;
+    const {_id, email, name} = user;
+
+    
   }
 
   static async changePin(body, user) {

@@ -9,7 +9,26 @@ const transferSocket = require("./config/socket");
 const server = http.createServer(app);
 // Json parse
 app.use(express.json())
-app.use(cors())
+
+const allowedOrigins = [
+   // local backend
+  "http://localhost:8000", // local frontend from payverge
+  "https://blink-pay.vercel.app", // production frontend
+];
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // if you need cookies/auth headers
+  })
+);
 app.use(morgan("dev"))
 
 app.use("/api/v1", require("./router"))

@@ -68,6 +68,16 @@ class AccountValidation {
   static virtualAccount = [
     body("amount").notEmpty().withMessage("Amount is required")
   ];
+
+  static createDigitalCard = [
+    body("card_name").notEmpty().withMessage("Card Name is required"),
+    body("card_type").notEmpty().withMessage("Card type is required").custom((value) => {
+      const types = ['platinum', 'women', 'regular', 'vintage']
+      if(!types.includes(value)){
+        throw new Error(`Card type must be one of these: ${types.join(",")}.`)
+      }
+    })
+  ]
 }
 
 module.exports = AccountValidation;

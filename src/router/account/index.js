@@ -33,6 +33,9 @@ router
   .route("/bulk-transfer")
   .post(AccountValidation.bulkTransfer, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.bulkTransfer)
 
+  router
+  .route("/create-digital-card")
+  .post(AccountValidation.createDigitalCard, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.createDigitalCard)
 
 
 
