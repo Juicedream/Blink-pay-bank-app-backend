@@ -38,6 +38,11 @@ class AccountController {
     const res_obj = await AccountService.createDigitalCard(req.body, user, account);
     res.status(201).send(res_obj);
   }
+  static async showCard(req, res){
+    const account = req.account;
+    const res_obj = await AccountService.showCard(account);
+    res.status(200).send(res_obj);
+  }
 
   
 
