@@ -5,6 +5,11 @@ const SECRET_KEY = process.env.SECRET_KEY;
 const SECRET_IV = process.env.SECRET_IV;
 const ALGORITHM = process.env.ALGORITHM;
 
+const key = crypto.createHash("sha256").update(SECRET_KEY).digest(); // 32 bytes
+const iv  = crypto.createHash("md5").update(SECRET_IV).digest();     // 16 bytes
+
+
+
 function getAge(date) {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -54,9 +59,17 @@ function generateRefId() {
   return `BP-${id}`;
 }
 function generateCardNumber(acc_type) {
-  const random_numbers =
-    Math.floor(Math.random() * 99999999999999) + 9999999999999;
-  const four_teen = random_numbers.toString();
+  let four_teen;
+
+  while(true){
+    four_teen = (Math.floor(Math.random() * 99999999999999) + 9999999999999).toString();
+    if(four_teen.length === 14){
+      break
+    }
+    continue
+  }
+    
+ 
   if (acc_type === "savings") {
     return "41" + four_teen;
   } else {
@@ -66,7 +79,15 @@ function generateCardNumber(acc_type) {
 
 
 function generateCvv() {
-  return Math.floor(Math.random() * 999) + 99;
+  let cvv;
+  while(true){
+    cvv =  (Math.floor(Math.random() * 999) + 9).toString();
+    if(cvv.length === 3){
+      break
+    }
+    continue
+  }
+  return cvv.toString();
 }
 
 
@@ -112,4 +133,5 @@ module.exports = {
   encrypt,
   decrypt,
   generateCardExpiryDate,
+  dbCardExpiryDate,
 };

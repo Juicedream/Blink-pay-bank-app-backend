@@ -10,7 +10,7 @@ const schema = new mongoose.Schema(
     
     acc_type: {
       type: String,
-      defualt: "virtual",
+      default: "virtual",
     },
 
     userId: {
@@ -20,7 +20,7 @@ const schema = new mongoose.Schema(
     tier: {
       type: String,
       enum: ["Tier 1", "Tier 2", "Tier 3"],
-      defaut: "Tier 3",
+      default: "Tier 3",
     },
 
     amount: {

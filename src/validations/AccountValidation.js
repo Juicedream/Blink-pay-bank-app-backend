@@ -76,6 +76,7 @@ class AccountValidation {
       if(!types.includes(value)){
         throw new Error(`Card type must be one of these: ${types.join(",")}.`)
       }
+      return true
     })
   ]
 }
