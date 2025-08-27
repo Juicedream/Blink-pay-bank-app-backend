@@ -629,7 +629,7 @@ class AccountService {
   static async createVirtualAccount(body, user, account){
     const {_id, name } = user;
     const { amount } = body;
-    const EXPIRES_IN = 20  // mins
+    const EXPIRES_IN = 2  // mins
     const ACCOUNT_NAME = "Payverge_Checkout_" + name.slice(0, 2)
 
     if(amount < LEAST_AMOUNT){
@@ -664,7 +664,7 @@ class AccountService {
     const {acc_balance, acc_number} = account;
     const {_id, email, name} = user;
 
-    
+
   }
 
   static async changePin(body, user) {
