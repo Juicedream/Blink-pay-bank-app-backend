@@ -325,187 +325,132 @@ class AccountService {
       let sender_balance_before = senderAccount.acc_balance;
       let receiver_balance_before = actual_receiver.acc_balance;
       let main_bank_balance_before = main_bank.acc_balance;
+      let main_bank_balance_after = main_bank.acc_balance;
 
       main_bank.acc_balance += TRANSFER_TAX;
 
       const ref_id = generateRefId();
 
-      if (virtual_account.userId === senderAccount.userId) {
-        let main_bank_balance_after = main_bank.acc_balance;
-        senderAccount.acc_balance = senderAccount.acc_balance;
-        const mainBankTransaction = await TransactionModel.create({
-          account_id: main_bank._id,
-          tran_type: "credit",
-          amount: TRANSFER_TAX,
-          currency: "NGN",
-          status: "successful",
-          ref_id,
-          narration: `Transfer tax for ${name}`,
-          balance_before: main_bank_balance_before,
-          balance_after: main_bank_balance_after,
-          channel: "web",
-          meta_data: {
-            recipient_bank: "Blinkpay Bank",
-            recipient_acc_num: senderAccount.acc_number,
-            deviceInfo: {
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-              language: navigator.language,
-            },
-          },
-        });
+     
+         main_bank.acc_balance += TRANSFER_TAX;
+         senderAccount.acc_balance -= amount;
+         let actual_amount = amount - TRANSFER_TAX;
+         actual_receiver.acc_balance += actual_amount;
+         console.log({actual_receiver, main_bank, senderAccount})
 
-        const senderTransaction = await TransactionModel.create({
-          account_id: sender._id,
-          tran_type: "credit",
-          amount: actual_amount,
-          currency: "NGN",
-          status: "successful",
-          narration,
-          ref_id,
-          balance_before: sender_balance_before,
-          balance_after: sender_balance_before,
-          channel: "web",
-          meta_data: {
-            recipient_bank: "Blinkpay Bank",
-            recipient_acc_num: senderAccount.acc_number,
-            deviceInfo: {
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-              language: navigator.language,
-            },
-          },
-        });
+         let sender_balance_after = senderAccount.acc_balance;
+         let receiver_balance_after = actual_receiver.acc_balance;
+        
 
-        main_bank.tran_history.push(mainBankTransaction._id);
-        senderAccount.tran_history.push(senderTransaction._id);
+         //add to transaction
+         const mainBankTransaction = await TransactionModel.create({
+           account_id: main_bank._id,
+           tran_type: "credit",
+           amount: TRANSFER_TAX,
+           currency: "NGN",
+           status: "successful",
+           ref_id,
+           narration: `Transfer tax for ${name}`,
+           balance_before: main_bank_balance_before,
+           balance_after: main_bank_balance_after,
+           channel: "web",
+           meta_data: {
+             recipient_bank: "Blinkpay Bank",
+             recipient_acc_num: actual_receiver.acc_number,
+             deviceInfo: {
+               userAgent: navigator.userAgent,
+               platform: navigator.platform,
+               language: navigator.language,
+             },
+           },
+         });
+         const senderTransaction = await TransactionModel.create({
+           account_id: senderAccount._id,
+           tran_type: "debit",
+           amount,
+           currency: "NGN",
+           status: "successful",
+           narration,
+           ref_id,
+           balance_before: sender_balance_before,
+           balance_after: sender_balance_after,
+           channel: "web",
+           meta_data: {
+             recipient_bank: "Blinkpay Bank",
+             recipient_acc_num: receiver_acc_number,
+             deviceInfo: {
+               userAgent: navigator.userAgent,
+               platform: navigator.platform,
+               language: navigator.language,
+             },
+           },
+         });
+         const recieverTransaction = await TransactionModel.create({
+           account_id: actual_receiver._id,
+           tran_type: "credit",
+           amount: actual_amount,
+           currency: "NGN",
+           status: "successful",
+           narration,
+           ref_id,
+           balance_before: receiver_balance_before,
+           balance_after: receiver_balance_after,
+           channel: "web",
+           meta_data: {
+             recipient_bank: "Blinkpay Bank",
+             recipient_acc_num: actual_receiver.acc_number,
+             deviceInfo: {
+               userAgent: navigator.userAgent,
+               platform: navigator.platform,
+               language: navigator.language,
+             },
+           },
+         });
 
-        main_bank.save();
-        senderAccount.save();
+         // update tran history
+         main_bank.tran_history.push(mainBankTransaction._id);
+         actual_receiver.tran_history.push(recieverTransaction._id);
+         senderAccount.tran_history.push(senderTransaction._id);
 
-        await VirtualAccountModel.deleteOne({
-          userId: virtual_account.userId,
-        });
-        console.log("✅ Transfer successfully because the account number is for the virtual account", { amount_left });
-        return {
-          msg: `Virtual Money sent successfully to ${virtual_account.name}`,
-          tran_details: recieverTransaction,
-        };
+         main_bank.save();
+         actual_receiver.save();
+         senderAccount.save();
+
+         eventBus.emit("money:sent", {
+           name,
+           email,
+           amount,
+           narration,
+           transactionId: senderTransaction._id,
+         });
+
+         eventBus.emit("money:paid", {
+           bank: "Blinkpay Bank",
+           transfer_tax: TRANSFER_TAX,
+           narration: mainBankTransaction.narration,
+           email: main_bank.email,
+           transactionId: mainBankTransaction._id,
+         });
+
+         eventBus.emit("money:receieved", {
+           receiver_name: actual_receiver.name,
+           amount: actual_amount,
+           narration,
+           email: actual_receiver.email,
+           transactionId: recieverTransaction._id,
+         });
+         await VirtualAccountModel.deleteOne({
+           userId: virtual_account.userId,
+         });
+         console.log("✅ Virtual Transfer successfully", { amount_left });
+         return {
+           msg: `Virtual Money sent successfully to ${virtual_account.name}`,
+           tran_details: senderTransaction,
+         };
       }
 
-      main_bank.acc_balance += TRANSFER_TAX;
-      senderAccount.acc_balance -= amount;
-      let actual_amount = amount - TRANSFER_TAX;
-      actual_receiver.acc_balance += actual_amount;
-
-      let sender_balance_after = senderAccount.acc_balance;
-      let receiver_balance_after = actual_receiver.acc_balance;
-      let main_bank_balance_after = main_bank.acc_balance;
-
-      //add to transaction
-      const mainBankTransaction = await TransactionModel.create({
-        account_id: main_bank._id,
-        tran_type: "credit",
-        amount: TRANSFER_TAX,
-        currency: "NGN",
-        status: "successful",
-        ref_id,
-        narration: `Transfer tax for ${name}`,
-        balance_before: main_bank_balance_before,
-        balance_after: main_bank_balance_after,
-        channel: "web",
-        meta_data: {
-          recipient_bank: "Blinkpay Bank",
-          recipient_acc_num: actual_receiver.acc_number,
-          deviceInfo: {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-          },
-        },
-      });
-      const senderTransaction = await TransactionModel.create({
-        account_id: senderAccount._id,
-        tran_type: "debit",
-        amount,
-        currency: "NGN",
-        status: "successful",
-        narration,
-        ref_id,
-        balance_before: sender_balance_before,
-        balance_after: sender_balance_after,
-        channel: "web",
-        meta_data: {
-          recipient_bank: "Blinkpay Bank",
-          recipient_acc_num: receiver_acc_number,
-          deviceInfo: {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-          },
-        },
-      });
-      const recieverTransaction = await TransactionModel.create({
-        account_id: actual_receiver._id,
-        tran_type: "credit",
-        amount: actual_amount,
-        currency: "NGN",
-        status: "successful",
-        narration,
-        ref_id,
-        balance_before: receiver_balance_before,
-        balance_after: receiver_balance_after,
-        channel: "web",
-        meta_data: {
-          recipient_bank: "Blinkpay Bank",
-          recipient_acc_num: actual_receiver.acc_number,
-          deviceInfo: {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-          },
-        },
-      });
-
-      // update tran history
-      main_bank.tran_history.push(mainBankTransaction._id);
-      actual_receiver.tran_history.push(recieverTransaction._id);
-      senderAccount.tran_history.push(senderTransaction._id);
-
-      main_bank.save();
-      actual_receiver.save();
-      senderAccount.save();
-
-      eventBus.emit("money:sent", {
-        name,
-        email,
-        amount,
-        narration,
-        transactionId: senderTransaction._id,
-      });
-
-      eventBus.emit("money:paid", {
-        bank: "Blinkpay Bank",
-        transfer_tax: TRANSFER_TAX,
-        narration: mainBankTransaction.narration,
-        email: main_bank.email,
-        transactionId: mainBankTransaction._id,
-      });
-
-      eventBus.emit("money:receieved", {
-        receiver_name: actual_receiver.name,
-        amount: actual_amount,
-        narration,
-        email: actual_receiver.email,
-        transactionId: recieverTransaction._id,
-      });
-      await VirtualAccountModel.deleteOne({ userId: virtual_account.userId });
-      console.log("✅ Transfer successfully", { amount_left });
-      return {
-        msg: `Money sent successfully to ${virtual_account.name}`,
-        tran_details: senderTransaction,
-      };
-    }
+     
+    
   }
   static async bulkTransfer(body, user, account) {
     let { receiver_acc_numbers, sender_pin, amount, narration } = body;
