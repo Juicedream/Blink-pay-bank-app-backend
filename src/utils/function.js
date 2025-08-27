@@ -97,7 +97,7 @@ function encrypt(text) {
   encrypted += cipher.final("hex");
   return encrypted;
 }
-function decrypt(encryptedText) {
+ function decrypt(encryptedText) {
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
   let decrypted = decipher.update(encryptedText, "hex", "utf8");
   decrypted += decipher.final("utf8");

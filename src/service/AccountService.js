@@ -332,6 +332,7 @@ class AccountService {
 
       if (virtual_account.userId === senderAccount.userId) {
         let main_bank_balance_after = main_bank.acc_balance;
+        senderAccount.acc_balance = senderAccount.acc_balance;
         const mainBankTransaction = await TransactionModel.create({
           account_id: main_bank._id,
           tran_type: "credit",
@@ -353,21 +354,21 @@ class AccountService {
             },
           },
         });
-        
-        const recieverTransaction = await TransactionModel.create({
-          account_id: actual_receiver._id,
+
+        const senderTransaction = await TransactionModel.create({
+          account_id: sender._id,
           tran_type: "credit",
           amount: actual_amount,
           currency: "NGN",
           status: "successful",
           narration,
           ref_id,
-          balance_before: receiver_balance_before,
-          balance_after: receiver_balance_before,
+          balance_before: sender_balance_before,
+          balance_after: sender_balance_before,
           channel: "web",
           meta_data: {
             recipient_bank: "Blinkpay Bank",
-            recipient_acc_num: actual_receiver.acc_number,
+            recipient_acc_num: senderAccount.acc_number,
             deviceInfo: {
               userAgent: navigator.userAgent,
               platform: navigator.platform,
@@ -377,7 +378,7 @@ class AccountService {
         });
 
         main_bank.tran_history.push(mainBankTransaction._id);
-        senderAccount.tran_history.push(recieverTransaction._id);
+        senderAccount.tran_history.push(senderTransaction._id);
 
         main_bank.save();
         senderAccount.save();
@@ -385,9 +386,9 @@ class AccountService {
         await VirtualAccountModel.deleteOne({
           userId: virtual_account.userId,
         });
-        console.log("✅ Transfer successfully", { amount_left });
+        console.log("✅ Transfer successfully because the account number is for the virtual account", { amount_left });
         return {
-          msg: `Money sent successfully to ${virtual_account.name}`,
+          msg: `Virtual Money sent successfully to ${virtual_account.name}`,
           tran_details: recieverTransaction,
         };
       }
@@ -801,12 +802,13 @@ class AccountService {
     const newCard = await CardModel.create({
       card_name,
       acc_type,
+      card_type,
       accountId: account_id,
       card_pan: card_pan_encrypted,
       card_cvv: card_cvv_encyrpted,
       pin: card_pin_encrypted,
       card_expiry,
-      expiresAt: dbCardExpiryDate(),
+      expiresAt: dbCardExpiryDate(CARD_EXPIRY_MONTH),
     });
 
     let narration = "Card Creation";
@@ -855,9 +857,10 @@ class AccountService {
       throw new ApiError(404, "Invalid Request- You don't have a card");
     }
 
+   
     //show card
-    const decrypted_pan_number = decrypt(hasCard.card_pan);
-    const decrypted_cvv = decrypt(hasCard.cvv);
+    let decrypted_pan_number =  decrypt(hasCard.card_pan);
+    let decrypted_cvv =  decrypt(hasCard.card_cvv);
     const expiry_date = hasCard.card_expiry;
     const card_name = hasCard.card_name;
 
@@ -870,6 +873,9 @@ class AccountService {
         expiry_date,
       },
     };
+    // return{
+    //   hasCard
+    // }
   }
 
   static async changePin(body, user) {

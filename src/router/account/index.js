@@ -41,8 +41,8 @@ router
   .route("/create-digital-card")
   .post(AccountValidation.createDigitalCard, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.createDigitalCard)
   router
-  .route("/show-digital-card")
-  .post(AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.showCard)
+  .route("/show-card")
+  .get(AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.showCard)
 
 
 
