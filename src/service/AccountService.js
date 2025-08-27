@@ -325,17 +325,19 @@ class AccountService {
       let sender_balance_before = senderAccount.acc_balance;
       let receiver_balance_before = actual_receiver.acc_balance;
       let main_bank_balance_before = main_bank.acc_balance;
-      let main_bank_balance_after = main_bank.acc_balance;
-
+      
       main_bank.acc_balance += TRANSFER_TAX;
+      let main_bank_balance_after = main_bank.acc_balance;
 
       const ref_id = generateRefId();
 
-     
-         main_bank.acc_balance += TRANSFER_TAX;
-         senderAccount.acc_balance -= amount;
-         let actual_amount = amount - TRANSFER_TAX;
-         actual_receiver.acc_balance += actual_amount;
+      let actual_amount = amount - TRANSFER_TAX;
+      if(senderAccount.acc_number !== actual_receiver.acc_number){
+        senderAccount.acc_balance -= amount;
+        actual_receiver.acc_balance += actual_amount;
+      }
+
+        
          console.log({actual_receiver, main_bank, senderAccount})
 
          let sender_balance_after = senderAccount.acc_balance;
