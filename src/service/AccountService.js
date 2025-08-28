@@ -747,7 +747,11 @@ class AccountService {
     });
 
     let bank_balance_before = bank.acc_balance;
-    bank.acc_balance += LEAST_AMOUNT;
+    if(bank.acc_number !== user_account.acc_number){
+      bank.acc_balance += LEAST_AMOUNT;
+    }else{
+      user_account.acc_balance += LEAST_AMOUNT;
+    }
     let bank_balance_after = bank.acc_balance;
 
     const newCard = await CardModel.create({
