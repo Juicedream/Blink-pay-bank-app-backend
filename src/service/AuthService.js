@@ -5,6 +5,7 @@ const JWTService = require("../utils/JwtService");
 const { AccountModel } = require("../models/Account.model");
 const { TransactionModel } = require("../models/Transaction.model");
 const { all } = require("../router/account");
+const { CardModel } = require("../models/Card.model");
 
 class AuthService {
   static async loginUser(body) {
@@ -57,6 +58,7 @@ class AuthService {
   static async profileUser(user){
     const found_user = await UserModel.findById(user).select("name email acc_type createdAt -_id");
     const found_account = await AccountModel.findOne({userId: user})
+    const card = await CardModel.findOne({accountId: found_account._id})
     if(!found_user){
       throw new ApiError(401, "Profile Not Found")
     }
@@ -64,7 +66,7 @@ class AuthService {
     let all_user_transactions = await TransactionModel.find({account_id: found_account._id})
 
 
-    return {user: found_account, tran_history: all_user_transactions}
+    return {user: found_account, tran_history: all_user_transactions, card}
   }
 }
 
