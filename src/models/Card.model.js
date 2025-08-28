@@ -45,7 +45,6 @@ const schema = new mongoose.Schema(
     card_expiry: {
       type: String,
       required: true,
-      unique: true,
     },
 
     expiresAt: {
