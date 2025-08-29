@@ -1,4 +1,4 @@
-const { default: mongoose } = require("mongoose");
+const { default: mongoose, isValidObjectId } = require("mongoose");
 const { AccountModel } = require("../models/Account.model");
 const { TransactionModel } = require("../models/Transaction.model");
 const { UserModel } = require("../models/User.model");
@@ -852,6 +852,52 @@ class AccountService {
     } else {
       throw new ApiError(400, "Invalid Pin Provided");
     }
+  }
+
+  static async deleteCard(body, account, card){
+    const {card_id} = body;
+    const {_id} = account;
+    
+    if(!card || card.length === 0){
+      throw new ApiError(404, "Invalid Request- Create a card first");
+    }
+
+    const {_id:cardId} = card;
+    console.log({ cardId: cardId.toString(), card_id });
+
+    if(!isValidObjectId(card_id)){
+      throw new ApiError(401, "Wrong Card Id")
+    }
+
+    const findCard = await CardModel.findById(card_id);
+
+    if(!findCard){
+      throw new ApiError(404, "Card with id: " + card_id  + " doesn't exist!");
+    }
+
+
+    if (cardId.toString() !== card_id) {
+      throw new ApiError(401, "This card is not yours");
+    }
+
+    //delete card
+    await CardModel.deleteOne({accountId: _id});
+
+    return {
+      msg: `Card with ID: ${card_id} Deleted successfully`,
+      card,
+    }
+  }
+  static async cardPayment(body, account, card){
+    const {} = account;
+    const {} = card;
+    const {pan_number, cvv, expiry_date, amount} = body;
+
+    //if card sent is for the owner of the account. no debit transactions should take place only credit should show
+
+    //if card sent is for another account then owner of transaction should be credited and card owner should be debited
+
+
   }
 }
 

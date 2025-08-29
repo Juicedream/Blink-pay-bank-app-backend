@@ -66,18 +66,40 @@ class AccountValidation {
   ];
 
   static virtualAccount = [
-    body("amount").notEmpty().withMessage("Amount is required")
+    body("amount").notEmpty().withMessage("Amount is required"),
   ];
 
   static createDigitalCard = [
     body("card_name").notEmpty().withMessage("Card Name is required"),
-    body("card_type").notEmpty().withMessage("Card type is required").custom((value) => {
-      const types = ['platinum', 'women', 'regular', 'vintage']
-      if(!types.includes(value)){
-        throw new Error(`Card type must be one of these: ${types.join(",")}.`)
+    body("card_type")
+      .notEmpty()
+      .withMessage("Card type is required")
+      .custom((value) => {
+        const types = ["platinum", "women", "regular", "vintage"];
+        if (!types.includes(value)) {
+          throw new Error(
+            `Card type must be one of these: ${types.join(",")}.`
+          );
+        }
+        return true;
+      }),
+  ];
+  static cardPayment = [
+    body("pan_number").notEmpty().withMessage("Card Pan Number is required"),
+    body("cvv").notEmpty().withMessage("Card cvv is required").custom((val) => {
+      if(val.length !== 3){
+        throw new Error("Card Cvv should be three digits");
       }
-      return true
-    })
+      if(isNaN(val)){
+        throw new Error("Card Cvv should only be digits");
+      }
+      return true;
+    }),
+    body("expiry_date").notEmpty().withMessage("Card Expiry Date is required"),
+    body("amount").notEmpty().withMessage("Amount is required")
+  ];
+  static deleteCard=[
+    body("card_id").notEmpty().withMessage("Card Id is required")
   ]
 }
 
