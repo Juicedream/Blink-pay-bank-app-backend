@@ -49,6 +49,13 @@ class AccountController {
     const res_obj = await AccountService.deleteCard(req.body, account, card);
     res.status(200).send(res_obj);
   }
+  static async cardPayment(req, res){
+    const account = req.account;
+    const card = req.card;
+    const res_obj = await AccountService.cardPayment(req.body, account, card);
+    res.status(200).send(res_obj);
+  }
+
 
   
 

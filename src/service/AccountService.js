@@ -325,138 +325,132 @@ class AccountService {
       let sender_balance_before = senderAccount.acc_balance;
       let receiver_balance_before = actual_receiver.acc_balance;
       let main_bank_balance_before = main_bank.acc_balance;
-      
+
       main_bank.acc_balance += TRANSFER_TAX;
-      
+
       let main_bank_balance_after = main_bank.acc_balance;
 
       const ref_id = generateRefId();
 
       let actual_amount = amount - TRANSFER_TAX;
-      if(senderAccount.acc_number !== actual_receiver.acc_number){
+      if (senderAccount.acc_number !== actual_receiver.acc_number) {
         senderAccount.acc_balance -= amount;
         actual_receiver.acc_balance += actual_amount;
-      }else{
-        senderAccount.acc_balance -= TRANSFER_TAX
+      } else {
+        senderAccount.acc_balance -= TRANSFER_TAX;
       }
 
+      console.log({ actual_receiver, main_bank, senderAccount });
 
+      let sender_balance_after = senderAccount.acc_balance;
+      let receiver_balance_after = actual_receiver.acc_balance;
 
-         console.log({actual_receiver, main_bank, senderAccount})
+      //add to transaction
+      const mainBankTransaction = await TransactionModel.create({
+        account_id: main_bank._id,
+        tran_type: "credit",
+        amount: TRANSFER_TAX,
+        currency: "NGN",
+        status: "successful",
+        ref_id,
+        narration: `Transfer tax for ${name}`,
+        balance_before: main_bank_balance_before,
+        balance_after: main_bank_balance_after,
+        channel: "web",
+        meta_data: {
+          recipient_bank: "Blinkpay Bank",
+          recipient_acc_num: actual_receiver.acc_number,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+          },
+        },
+      });
+      const senderTransaction = await TransactionModel.create({
+        account_id: senderAccount._id,
+        tran_type: "debit",
+        amount,
+        currency: "NGN",
+        status: "successful",
+        narration,
+        ref_id,
+        balance_before: sender_balance_before,
+        balance_after: sender_balance_after,
+        channel: "web",
+        meta_data: {
+          recipient_bank: "Blinkpay Bank",
+          recipient_acc_num: receiver_acc_number,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+          },
+        },
+      });
+      const recieverTransaction = await TransactionModel.create({
+        account_id: actual_receiver._id,
+        tran_type: "credit",
+        amount: actual_amount,
+        currency: "NGN",
+        status: "successful",
+        narration,
+        ref_id,
+        balance_before: receiver_balance_before,
+        balance_after: receiver_balance_after,
+        channel: "web",
+        meta_data: {
+          recipient_bank: "Blinkpay Bank",
+          recipient_acc_num: actual_receiver.acc_number,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+          },
+        },
+      });
 
-         let sender_balance_after = senderAccount.acc_balance;
-         let receiver_balance_after = actual_receiver.acc_balance;
-        
+      // update tran history
+      main_bank.tran_history.push(mainBankTransaction._id);
+      actual_receiver.tran_history.push(recieverTransaction._id);
+      senderAccount.tran_history.push(senderTransaction._id);
 
-         //add to transaction
-         const mainBankTransaction = await TransactionModel.create({
-           account_id: main_bank._id,
-           tran_type: "credit",
-           amount: TRANSFER_TAX,
-           currency: "NGN",
-           status: "successful",
-           ref_id,
-           narration: `Transfer tax for ${name}`,
-           balance_before: main_bank_balance_before,
-           balance_after: main_bank_balance_after,
-           channel: "web",
-           meta_data: {
-             recipient_bank: "Blinkpay Bank",
-             recipient_acc_num: actual_receiver.acc_number,
-             deviceInfo: {
-               userAgent: navigator.userAgent,
-               platform: navigator.platform,
-               language: navigator.language,
-             },
-           },
-         });
-         const senderTransaction = await TransactionModel.create({
-           account_id: senderAccount._id,
-           tran_type: "debit",
-           amount,
-           currency: "NGN",
-           status: "successful",
-           narration,
-           ref_id,
-           balance_before: sender_balance_before,
-           balance_after: sender_balance_after,
-           channel: "web",
-           meta_data: {
-             recipient_bank: "Blinkpay Bank",
-             recipient_acc_num: receiver_acc_number,
-             deviceInfo: {
-               userAgent: navigator.userAgent,
-               platform: navigator.platform,
-               language: navigator.language,
-             },
-           },
-         });
-         const recieverTransaction = await TransactionModel.create({
-           account_id: actual_receiver._id,
-           tran_type: "credit",
-           amount: actual_amount,
-           currency: "NGN",
-           status: "successful",
-           narration,
-           ref_id,
-           balance_before: receiver_balance_before,
-           balance_after: receiver_balance_after,
-           channel: "web",
-           meta_data: {
-             recipient_bank: "Blinkpay Bank",
-             recipient_acc_num: actual_receiver.acc_number,
-             deviceInfo: {
-               userAgent: navigator.userAgent,
-               platform: navigator.platform,
-               language: navigator.language,
-             },
-           },
-         });
+      main_bank.save();
+      actual_receiver.save();
+      senderAccount.save();
 
-         // update tran history
-         main_bank.tran_history.push(mainBankTransaction._id);
-         actual_receiver.tran_history.push(recieverTransaction._id);
-         senderAccount.tran_history.push(senderTransaction._id);
+      eventBus.emit("money:sent", {
+        name,
+        email,
+        amount,
+        narration,
+        transactionId: senderTransaction._id,
+      });
 
-         main_bank.save();
-         actual_receiver.save();
-         senderAccount.save();
+      eventBus.emit("money:paid", {
+        bank: "Blinkpay Bank",
+        transfer_tax: TRANSFER_TAX,
+        narration: mainBankTransaction.narration,
+        email: main_bank.email,
+        transactionId: mainBankTransaction._id,
+      });
 
-         eventBus.emit("money:sent", {
-           name,
-           email,
-           amount,
-           narration,
-           transactionId: senderTransaction._id,
-         });
-
-         eventBus.emit("money:paid", {
-           bank: "Blinkpay Bank",
-           transfer_tax: TRANSFER_TAX,
-           narration: mainBankTransaction.narration,
-           email: main_bank.email,
-           transactionId: mainBankTransaction._id,
-         });
-
-         eventBus.emit("money:receieved", {
-           receiver_name: actual_receiver.name,
-           amount: actual_amount,
-           narration,
-           email: actual_receiver.email,
-           transactionId: recieverTransaction._id,
-         });
-         await VirtualAccountModel.deleteOne({
-           userId: virtual_account.userId,
-         });
-         console.log("✅ Virtual Transfer successfully", { amount_left });
-         return {
-           msg: `Virtual Money sent successfully to ${virtual_account.name}`,
-           tran_details: senderTransaction,
-         };
-      }
-
-     
-    
+      eventBus.emit("money:receieved", {
+        receiver_name: actual_receiver.name,
+        amount: actual_amount,
+        narration,
+        email: actual_receiver.email,
+        transactionId: recieverTransaction._id,
+      });
+      await VirtualAccountModel.deleteOne({
+        userId: virtual_account.userId,
+      });
+      console.log("✅ Virtual Transfer successfully", { amount_left });
+      return {
+        msg: `Virtual Money sent successfully to ${virtual_account.name}`,
+        tran_details: senderTransaction,
+      };
+    }
   }
   static async bulkTransfer(body, user, account) {
     let { receiver_acc_numbers, sender_pin, amount, narration } = body;
@@ -747,9 +741,9 @@ class AccountService {
     });
 
     let bank_balance_before = bank.acc_balance;
-    if(bank.acc_number !== user_account.acc_number){
+    if (bank.acc_number !== user_account.acc_number) {
       bank.acc_balance += LEAST_AMOUNT;
-    }else{
+    } else {
       user_account.acc_balance += LEAST_AMOUNT;
     }
     let bank_balance_after = bank.acc_balance;
@@ -812,10 +806,9 @@ class AccountService {
       throw new ApiError(404, "Invalid Request- You don't have a card");
     }
 
-   
     //show card
-    let decrypted_pan_number =  decrypt(hasCard.card_pan);
-    let decrypted_cvv =  decrypt(hasCard.card_cvv);
+    let decrypted_pan_number = decrypt(hasCard.card_pan);
+    let decrypted_cvv = decrypt(hasCard.card_cvv);
     const expiry_date = hasCard.card_expiry;
     const card_name = hasCard.card_name;
 
@@ -854,50 +847,197 @@ class AccountService {
     }
   }
 
-  static async deleteCard(body, account, card){
-    const {card_id} = body;
-    const {_id} = account;
-    
-    if(!card || card.length === 0){
+  static async deleteCard(body, account, card) {
+    const { card_id } = body;
+    const { _id } = account;
+
+    if (!card || card.length === 0) {
       throw new ApiError(404, "Invalid Request- Create a card first");
     }
 
-    const {_id:cardId} = card;
+    const { _id: cardId } = card;
     console.log({ cardId: cardId.toString(), card_id });
 
-    if(!isValidObjectId(card_id)){
-      throw new ApiError(401, "Wrong Card Id")
+    if (!isValidObjectId(card_id)) {
+      throw new ApiError(401, "Wrong Card Id");
     }
 
     const findCard = await CardModel.findById(card_id);
 
-    if(!findCard){
-      throw new ApiError(404, "Card with id: " + card_id  + " doesn't exist!");
+    if (!findCard) {
+      throw new ApiError(404, "Card with id: " + card_id + " doesn't exist!");
     }
-
 
     if (cardId.toString() !== card_id) {
       throw new ApiError(401, "This card is not yours");
     }
 
     //delete card
-    await CardModel.deleteOne({accountId: _id});
+    await CardModel.deleteOne({ accountId: _id });
 
     return {
       msg: `Card with ID: ${card_id} Deleted successfully`,
       card,
-    }
+    };
   }
-  static async cardPayment(body, account, card){
-    const {} = account;
-    const {} = card;
-    const {pan_number, cvv, expiry_date, amount} = body;
+  static async cardPayment(body, account, card) {
+    const { acc_number, acc_balance, _id: accountId, transfer_limit } = account;
+    let { pan_number, cvv, expiry_date, amount } = body;
 
+    amount = Number(amount);
+    let narration = "Payment with card";
+    let ref_id = generateRefId();
     //if card sent is for the owner of the account. no debit transactions should take place only credit should show
+    if (card) {
+      const { card_pan, card_cvv, card_expiry } = card;
+
+      
+      if (amount >= transfer_limit) {
+        throw new ApiError(400, "Payment Limit Exceeded!");
+      }
+      
+      if (acc_balance - amount <= 1000) {
+        throw new ApiError(400, "Insufficient Funds!");
+      }
+
+
+
+      let decrypted_pan_number = decrypt(card_pan);
+      let decrypted_cvv = decrypt(card_cvv);
+
+      if (
+        pan_number === decrypted_pan_number &&
+        cvv === decrypted_cvv &&
+        card_expiry === expiry_date
+      ) {
+        // console.log("Your card");
+        // return({card});
+        
+        const user_account = await AccountModel.findOne({
+          acc_number: acc_number,
+        });
+        const senderTran = await TransactionModel.create({
+          account_id: accountId,
+          tran_type: "debit",
+          amount,
+          status: "successful",
+          narration,
+          ref_id,
+          balance_before: acc_balance,
+          balance_after: acc_balance - amount,
+          channel: "card",
+          meta_data: {
+            recipient_bank: "Blink Pay Bank",
+            recipient_acc_num: acc_number,
+          },
+        });
+        const receiverTran = await TransactionModel.create({
+          account_id: accountId,
+          tran_type: "credit",
+          amount,
+          status: "successful",
+          narration,
+          ref_id,
+          balance_before: acc_balance - amount,
+          balance_after: acc_balance,
+          channel: "card",
+          meta_data: {
+            sender_bank: "Blink Pay Bank",
+            sender_acc_num: acc_number,
+          },
+        });
+        user_account.tran_history.push(senderTran._id);
+        user_account.tran_history.push(receiverTran._id);
+        await user_account.save();
+        return {
+          msg: "Card Payment was successful",
+          transaction: senderTran,
+        };
+      }
+    }
 
     //if card sent is for another account then owner of transaction should be credited and card owner should be debited
+    const cards = await CardModel.find({});
+    let foundCard;
+    for (let eachCard of cards) {
+      const cardPan = decrypt(eachCard.card_pan);
+      const cardCvv = decrypt(eachCard.card_cvv);
+      const cardExpiryDate = eachCard.card_expiry;
 
+      if (
+        pan_number === cardPan &&
+        cvv === cardCvv &&
+        expiry_date === cardExpiryDate
+      ) {
+        console.log({ eachCard });
+        foundCard = eachCard;
+        break;
+      }
+      continue;
+    }
+    if (!foundCard) {
+      throw new ApiError(404, "Card not found or Expired!");
+    }
+    let foundAccount = await AccountModel.findById(foundCard.accountId);
+    if(amount >= foundAccount.transfer_limit){
+      throw new ApiError(400, "Payment Limit Exceeded!");
+    }
+    if (foundAccount.acc_balance - amount <= 1000) {
+      throw new ApiError(400, "Insufficient Funds!");
+    }
 
+    let sender_balance_before = foundAccount.acc_balance;
+    foundAccount.acc_balance -= amount;
+    let sender_balance_after = foundAccount.acc_balance;
+
+    let receiver_balance_before = acc_balance;
+    const receiverAcc = await AccountModel.findOne({ acc_number });
+    receiverAcc.acc_balance += amount;
+
+    let receiver_balance_after = receiverAcc.acc_balance;
+
+    const senderTran = await TransactionModel.create({
+      account_id: foundAccount._id,
+      tran_type: "debit",
+      amount,
+      status: "successful",
+      narration,
+      ref_id,
+      balance_before: sender_balance_before,
+      balance_after: sender_balance_after,
+      channel: "card",
+      meta_data: {
+        recipient_bank: "Blink Pay Bank",
+        recipient_acc_num: acc_number,
+      },
+    });
+
+     const receiverTran = await TransactionModel.create({
+       account_id: receiverAcc._id,
+       tran_type: "credit",
+       amount,
+       status: "successful",
+       narration,
+       ref_id,
+       balance_before: receiver_balance_before,
+       balance_after: receiver_balance_after,
+       channel: "card",
+       meta_data: {
+         sender_bank: "Blink Pay Bank",
+         sender_acc_num: foundAccount.acc_number,
+       },
+     });
+
+     foundAccount.tran_history.push(senderTran);
+     receiverAcc.tran_history.push(receiverTran);
+
+     await foundAccount.save();
+     await receiverAcc.save();
+
+    return {
+      msg: "Card Payment was successful",
+      transaction: senderTran
+    };
   }
 }
 

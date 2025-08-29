@@ -42,9 +42,13 @@ router
   .post(AccountValidation.createDigitalCard, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.createDigitalCard)
  
   router
+  .route("/pay-with-card")
+  .post(AccountValidation.cardPayment, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.cardPayment)
+  
+  router
   .route("/delete-card")
   .post(AccountValidation.deleteCard, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.deleteCard)
- 
+  
   router
   .route("/show-card")
   .get(AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.showCard)
