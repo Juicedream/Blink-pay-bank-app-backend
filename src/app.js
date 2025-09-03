@@ -15,7 +15,7 @@ const wss = new webSocket.Server({ server });
 
 //track connections
 wss.on("connection", (ws) => {
-  console.log(ws);
+  // console.log(ws);
   console.log("Client connected from Mmesoma's side test page ✅");
 
   ws.on("message", (data) => {
