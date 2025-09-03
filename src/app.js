@@ -27,6 +27,19 @@ wss.on("connection", (ws) => {
   });
 });
 
+function triggerEvent(event, data) {
+  const payload = JSON.stringify({ event, data });
+  wss.clients.forEach((client) => {
+    if (client.readyState === webSocket.OPEN) {
+      client.send(payload);
+    }
+  });
+}
+
+triggerEvent("notification", { message: "Hello from the server!" });
+
+triggerEvent("message", { status: "Server update available."});
+
 const allowedOrigins = [
   "https://blink-pay.vercel.app", // production
   /^http:\/\/localhost:\d+$/, // allow any localhost port
