@@ -19,6 +19,7 @@ const {
 const eventBus = require("../events/eventBus");
 const { VirtualAccountModel } = require("../models/VirtualAccount.model");
 const { CardModel } = require("../models/Card.model");
+const { triggerSocketEvent } = require("../app");
 
 const ALLOWED_EMAILS = ["judexfrayo@gmail.com", "techygarage@gmail.com"];
 const MAIN_BANK_ACCOUNT = 5015203826;
@@ -880,6 +881,7 @@ class AccountService {
       card,
     };
   }
+
   static async cardPayment(body, account, card) {
     const { acc_number, acc_balance, _id: accountId, transfer_limit } = account;
     let { pan_number, cvv, expiry_date, amount } = body;
@@ -947,6 +949,10 @@ class AccountService {
         user_account.tran_history.push(senderTran._id);
         user_account.tran_history.push(receiverTran._id);
         await user_account.save();
+         triggerSocketEvent("card_payment_successful", {
+           transaction: senderTran,
+         });
+     
         return {
           msg: "Card Payment was successful",
           transaction: senderTran,
@@ -1031,6 +1037,9 @@ class AccountService {
 
      await foundAccount.save();
      await receiverAcc.save();
+
+     triggerSocketEvent("card_payment_successful", {transaction: senderTran});
+     
 
     return {
       msg: "Card Payment was successful",

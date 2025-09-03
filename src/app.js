@@ -18,12 +18,12 @@ wss.on("connection", (ws) => {
   // console.log(ws);
   console.log("Client connected from Mmesoma's side test page ✅");
 
-    ws.send(
-      JSON.stringify({
-        event: "welcome",
-        data: { message: "Hello from the server!" },
-      })
-    );
+    // ws.send(
+    //   JSON.stringify({
+    //     event: "welcome",
+    //     data: { message: "Hello from the server!" },
+    //   })
+    // );
 
   ws.on("message", (data) => {
     console.log("Message from client Mmesoma's test page: ", data.toString());
@@ -34,7 +34,8 @@ wss.on("connection", (ws) => {
   });
 });
 
-function triggerEvent(event, data) {
+
+export function triggerSocketEvent(event, data) {
   const payload = JSON.stringify({ event, data });
   wss.clients.forEach((client) => {
     if (client.readyState === webSocket.OPEN) {
@@ -43,9 +44,6 @@ function triggerEvent(event, data) {
   });
 }
 
-triggerEvent("notification", { message: "Hello from the server!" });
-
-triggerEvent("message", { status: "Server update available."});
 
 const allowedOrigins = [
   "https://blink-pay.vercel.app", // production
