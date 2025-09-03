@@ -7,10 +7,16 @@ const morgan = require("morgan")
 const cors = require('cors');
 const transferSocket = require("./config/socket");
 const server = http.createServer(app);
+const webSocket = require("ws");
 // Json parse
 app.use(express.json())
 
+const wss = new webSocket.Server({server});
 
+//track connections
+wss.on("connection", (ws) => {
+  console.log("Client connected from Mmesoma's side test page ✅");
+});
 
 const allowedOrigins = [
   "https://blink-pay.vercel.app", // production
