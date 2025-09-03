@@ -36,6 +36,7 @@ wss.on("connection", (ws) => {
 
 
 export function triggerSocketEvent(event, data) {
+  console.log("Triggering event:", event, "with data:", data);
   const payload = JSON.stringify({ event, data });
   wss.clients.forEach((client) => {
     if (client.readyState === webSocket.OPEN) {
