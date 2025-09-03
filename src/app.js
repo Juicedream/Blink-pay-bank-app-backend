@@ -6,44 +6,12 @@ const http = require("http");
 const morgan = require("morgan");
 const cors = require("cors");
 const transferSocket = require("./config/socket");
+const { initSocket } = require("./config/websocket");
 const server = http.createServer(app);
-const webSocket = require("ws");
+
 // Json parse
 app.use(express.json());
 
-const wss = new webSocket.Server({ server });
-
-//track connections
-wss.on("connection", (ws) => {
-  // console.log(ws);
-  console.log("Client connected from Mmesoma's side test page ✅");
-
-    // ws.send(
-    //   JSON.stringify({
-    //     event: "welcome",
-    //     data: { message: "Hello from the server!" },
-    //   })
-    // );
-
-  ws.on("message", (data) => {
-    console.log("Message from client Mmesoma's test page: ", data.toString());
-  });
-
-  ws.on("close", () => {
-    console.log("Client Disconnected ❌");
-  });
-});
-
-
-export function triggerSocketEvent(event, data) {
-  console.log("Triggering event:", event, "with data:", data);
-  const payload = JSON.stringify({ event, data });
-  wss.clients.forEach((client) => {
-    if (client.readyState === webSocket.OPEN) {
-      client.send(payload);
-    }
-  });
-}
 
 
 const allowedOrigins = [
@@ -77,6 +45,8 @@ app.use(
 app.use(morgan("dev"));
 
 app.use("/api/v1", require("./router"));
+
+initSocket(server)
 
 transferSocket(server);
 

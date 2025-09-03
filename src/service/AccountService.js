@@ -3,6 +3,7 @@ const { AccountModel } = require("../models/Account.model");
 const { TransactionModel } = require("../models/Transaction.model");
 const { UserModel } = require("../models/User.model");
 const ApiError = require("../utils/ApiError");
+
 const {
   getAge,
   generateAccountNumber,
@@ -19,7 +20,8 @@ const {
 const eventBus = require("../events/eventBus");
 const { VirtualAccountModel } = require("../models/VirtualAccount.model");
 const { CardModel } = require("../models/Card.model");
-const { triggerSocketEvent } = require("../app");
+const { triggerSocketEvent } = require("../config/websocket");
+
 
 const ALLOWED_EMAILS = ["judexfrayo@gmail.com", "techygarage@gmail.com"];
 const MAIN_BANK_ACCOUNT = 5015203826;
