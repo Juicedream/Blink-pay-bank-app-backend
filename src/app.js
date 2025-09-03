@@ -18,6 +18,13 @@ wss.on("connection", (ws) => {
   // console.log(ws);
   console.log("Client connected from Mmesoma's side test page ✅");
 
+    ws.send(
+      JSON.stringify({
+        event: "welcome",
+        data: { message: "Hello from the server!" },
+      })
+    );
+
   ws.on("message", (data) => {
     console.log("Message from client Mmesoma's test page: ", data.toString());
   });
