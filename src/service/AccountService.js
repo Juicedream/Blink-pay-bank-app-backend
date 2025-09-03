@@ -895,12 +895,10 @@ class AccountService {
       if (amount >= transfer_limit) {
         throw new ApiError(400, "Payment Limit Exceeded!");
       }
-      
+
       if (acc_balance - amount <= 1000) {
         throw new ApiError(400, "Insufficient Funds!");
       }
-
-
 
       let decrypted_pan_number = decrypt(card_pan);
       let decrypted_cvv = decrypt(card_cvv);
