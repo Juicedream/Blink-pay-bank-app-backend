@@ -22,6 +22,7 @@ function initSocket(server) {
 
 // Trigger an event to all clients
 function triggerSocketEvent(event, data) {
+    console.log("Triggering event:", event, data);
   if (!wss) {
     console.error("WebSocket server not initialized!");
     return;
