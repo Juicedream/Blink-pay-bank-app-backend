@@ -2,20 +2,29 @@ const express = require("express");
 const NotFoundError = require("./middleware/404Handling");
 const ApiError = require("./utils/ApiError");
 const app = express();
-const http = require("http")
-const morgan = require("morgan")
-const cors = require('cors');
+const http = require("http");
+const morgan = require("morgan");
+const cors = require("cors");
 const transferSocket = require("./config/socket");
 const server = http.createServer(app);
 const webSocket = require("ws");
 // Json parse
-app.use(express.json())
+app.use(express.json());
 
-const wss = new webSocket.Server({server});
+const wss = new webSocket.Server({ server });
 
 //track connections
 wss.on("connection", (ws) => {
+  console.log(ws);
   console.log("Client connected from Mmesoma's side test page ✅");
+
+  ws.on("message", (data) => {
+    console.log("Message from client Mmesoma's test page: ", data.toString());
+  });
+
+  ws.on("close", () => {
+    console.log("Client Disconnected ❌");
+  });
 });
 
 const allowedOrigins = [
@@ -46,19 +55,19 @@ app.use(
   })
 );
 
-app.use(morgan("dev"))
+app.use(morgan("dev"));
 
-app.use("/api/v1", require("./router"))
+app.use("/api/v1", require("./router"));
 
-transferSocket(server)
+transferSocket(server);
 
 app.get("/", (req, res) => {
-    res.send({status: "ok"});
+  res.send({ status: "ok" });
 });
 
 app.use("", (req, res, next) => {
-    next(new ApiError(404, "Not Found"))
-})
+  next(new ApiError(404, "Not Found"));
+});
 
 app.use(NotFoundError);
 
