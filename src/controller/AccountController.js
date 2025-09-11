@@ -59,7 +59,7 @@ class AccountController {
     // const account = req.account;
     // const card = req.card;
     const res_obj = await AccountService.showAccountInfo(
-      req.body
+      req.params
     );
     res.status(200).send(res_obj);
   }

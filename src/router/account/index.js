@@ -54,7 +54,7 @@ router
   .get(AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.showCard)
 
   router
-  .route("/show-account-info")
+  .route("/show-account-info/:account_number")
   .get(AccountValidation.showAccountInfo, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.showAccountInfo)
 
 

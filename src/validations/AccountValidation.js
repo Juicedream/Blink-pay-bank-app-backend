@@ -1,4 +1,4 @@
-const { body } = require("express-validator");
+const { body, param } = require("express-validator");
 
 
 class AccountValidation {
@@ -102,7 +102,7 @@ class AccountValidation {
     body("card_id").notEmpty().withMessage("Card Id is required")
   ]
   static showAccountInfo=[
-    body("account_number").notEmpty().withMessage("Account Number is required").custom((val)=>{
+    param("account_number").notEmpty().withMessage("Account Number is required").custom((val)=>{
       if(isNaN(val)){
         throw new Error("Account Number should only be digits");
       }

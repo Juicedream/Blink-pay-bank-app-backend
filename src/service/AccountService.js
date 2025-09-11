@@ -1072,8 +1072,8 @@ class AccountService {
       transaction: senderTran,
     };
   }
-  static async showAccountInfo(body) {
-    let { account_number } = body;
+  static async showAccountInfo(params) {
+    let { account_number } = params;
     account_number = Number(account_number);
 
     const account_info = await AccountModel.findOne({
