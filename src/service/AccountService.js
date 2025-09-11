@@ -448,7 +448,7 @@ class AccountService {
       triggerSocketEvent("money_received", {
         transaction: {
           sender_name: senderAccount.name,
-          amount,
+          amount: actual_amount,
           receiver_acc_number: actual_receiver.acc_number,
           narration,
         },
