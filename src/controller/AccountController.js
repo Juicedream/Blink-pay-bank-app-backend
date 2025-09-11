@@ -55,6 +55,14 @@ class AccountController {
     const res_obj = await AccountService.cardPayment(req.body, account, card);
     res.status(200).send(res_obj);
   }
+  static async showAccountInfo(req, res){
+    // const account = req.account;
+    // const card = req.card;
+    const res_obj = await AccountService.showAccountInfo(
+      req.body
+    );
+    res.status(200).send(res_obj);
+  }
 
 
   

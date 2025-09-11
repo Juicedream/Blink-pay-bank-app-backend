@@ -101,6 +101,18 @@ class AccountValidation {
   static deleteCard=[
     body("card_id").notEmpty().withMessage("Card Id is required")
   ]
+  static showAccountInfo=[
+    body("account_number").notEmpty().withMessage("Account Number is required").custom((val)=>{
+      if(isNaN(val)){
+        throw new Error("Account Number should only be digits");
+      }
+
+      if(val.length !== 10){
+        throw new Error("Account Number should be 10 digits");
+      }
+      return true;
+    })
+  ]
 }
 
 module.exports = AccountValidation;

@@ -22,13 +22,12 @@ const { VirtualAccountModel } = require("../models/VirtualAccount.model");
 const { CardModel } = require("../models/Card.model");
 const { triggerSocketEvent } = require("../config/websocket");
 
-
 const ALLOWED_EMAILS = ["judexfrayo@gmail.com", "techygarage@gmail.com"];
 const MAIN_BANK_ACCOUNT = 5015203826;
 const LEAST_AMOUNT = 1000;
 const TRANSFER_TAX = 25.0;
 const CARD_EXPIRY_MONTH = 1;
-const CARD_FEE = 500;
+// const CARD_FEE = 500;
 
 class AccountService {
   static async createAccount(body, user) {
@@ -190,6 +189,13 @@ class AccountService {
     }
 
     //actually send
+    triggerSocketEvent("transfer_initialized", {
+      sender_account: {
+        name: senderAccount.name,
+        accountNumber: senderAccount.acc_number,
+        amount,
+      },
+    });
     const main_bank = await AccountModel.findOne({
       acc_number: MAIN_BANK_ACCOUNT,
     });
@@ -280,29 +286,38 @@ class AccountService {
       receiverAccount.save();
       senderAccount.save();
 
-      eventBus.emit("money:sent", {
-        name,
-        email,
-        amount,
-        narration,
-        transactionId: senderTransaction._id,
+      triggerSocketEvent("money_received", {
+        transaction: {
+          amount: actual_amount,
+          receiver_acc_number: receiverAccount.acc_number,
+          narration,
+          sender_name: senderAccount.name,
+        },
       });
 
-      eventBus.emit("money:paid", {
-        bank: "Blinkpay Bank",
-        transfer_tax: TRANSFER_TAX,
-        narration: mainBankTransaction.narration,
-        email: main_bank.email,
-        transactionId: mainBankTransaction._id,
-      });
+      // eventBus.emit("money:sent", {
+      //   name,
+      //   email,
+      //   amount,
+      //   narration,
+      //   transactionId: senderTransaction._id,
+      // });
 
-      eventBus.emit("money:receieved", {
-        receiver_name: receiverAccount.name,
-        amount: actual_amount,
-        narration,
-        email: receiverAccount.email,
-        transactionId: recieverTransaction._id,
-      });
+      // eventBus.emit("money:paid", {
+      //   bank: "Blinkpay Bank",
+      //   transfer_tax: TRANSFER_TAX,
+      //   narration: mainBankTransaction.narration,
+      //   email: main_bank.email,
+      //   transactionId: mainBankTransaction._id,
+      // });
+
+      // eventBus.emit("money:receieved", {
+      //   receiver_name: receiverAccount.name,
+      //   amount: actual_amount,
+      //   narration,
+      //   email: receiverAccount.email,
+      //   transactionId: recieverTransaction._id,
+      // });
       console.log("✅ Transfer successfully", { amount_left });
       return {
         msg: `Money sent successfully to ${receiverAccount.name}`,
@@ -422,35 +437,46 @@ class AccountService {
       actual_receiver.save();
       senderAccount.save();
 
-      eventBus.emit("money:sent", {
-        name,
-        email,
-        amount,
-        narration,
-        transactionId: senderTransaction._id,
+      // eventBus.emit("money:sent", {
+      //   name,
+      //   email,
+      //   amount,
+      //   narration,
+      //   transactionId: senderTransaction._id,
+      // });
+
+      triggerSocketEvent("money_received", {
+        transaction: {
+          sender_name: senderAccount.name,
+          amount,
+          receiver_acc_number: actual_receiver.acc_number,
+          narration,
+        },
       });
 
-      eventBus.emit("money:paid", {
-        bank: "Blinkpay Bank",
-        transfer_tax: TRANSFER_TAX,
-        narration: mainBankTransaction.narration,
-        email: main_bank.email,
-        transactionId: mainBankTransaction._id,
-      });
+      // eventBus.emit("money:paid", {
+      //   bank: "Blinkpay Bank",
+      //   transfer_tax: TRANSFER_TAX,
+      //   narration: mainBankTransaction.narration,
+      //   email: main_bank.email,
+      //   transactionId: mainBankTransaction._id,
+      // });
 
-      eventBus.emit("money:receieved", {
-        receiver_name: actual_receiver.name,
-        amount: actual_amount,
-        narration,
-        email: actual_receiver.email,
-        transactionId: recieverTransaction._id,
-      });
+      // eventBus.emit("money:receieved", {
+      //   receiver_name: actual_receiver.name,
+      //   amount: actual_amount,
+      //   narration,
+      //   email: actual_receiver.email,
+      //   transactionId: recieverTransaction._id,
+      // });
       await VirtualAccountModel.deleteOne({
         userId: virtual_account.userId,
       });
-      console.log("✅ Virtual Transfer successfully", { amount_left });
+      console.log("✅ Transfer to Virtual account was successfull", {
+        amount_left,
+      });
       return {
-        msg: `Virtual Money sent successfully to ${virtual_account.name}`,
+        msg: `Money sent was successfully to ${virtual_account.name}`,
         tran_details: senderTransaction,
       };
     }
@@ -895,7 +921,6 @@ class AccountService {
     if (card) {
       const { card_pan, card_cvv, card_expiry } = card;
 
-      
       if (amount >= transfer_limit) {
         throw new ApiError(400, "Payment Limit Exceeded!");
       }
@@ -914,7 +939,7 @@ class AccountService {
       ) {
         // console.log("Your card");
         // return({card});
-        
+
         const user_account = await AccountModel.findOne({
           acc_number: acc_number,
         });
@@ -951,10 +976,10 @@ class AccountService {
         user_account.tran_history.push(senderTran._id);
         user_account.tran_history.push(receiverTran._id);
         await user_account.save();
-         triggerSocketEvent("card_payment_successful", {
-           transaction: senderTran,
-         });
-     
+        triggerSocketEvent("card_payment_successful", {
+          transaction: senderTran,
+        });
+
         return {
           msg: "Card Payment was successful",
           transaction: senderTran,
@@ -985,7 +1010,7 @@ class AccountService {
       throw new ApiError(404, "Card not found or Expired!");
     }
     let foundAccount = await AccountModel.findById(foundCard.accountId);
-    if(amount >= foundAccount.transfer_limit){
+    if (amount >= foundAccount.transfer_limit) {
       throw new ApiError(400, "Payment Limit Exceeded!");
     }
     if (foundAccount.acc_balance - amount <= 1000) {
@@ -1018,34 +1043,56 @@ class AccountService {
       },
     });
 
-     const receiverTran = await TransactionModel.create({
-       account_id: receiverAcc._id,
-       tran_type: "credit",
-       amount,
-       status: "successful",
-       narration,
-       ref_id,
-       balance_before: receiver_balance_before,
-       balance_after: receiver_balance_after,
-       channel: "card",
-       meta_data: {
-         sender_bank: "Blink Pay Bank",
-         sender_acc_num: foundAccount.acc_number,
-       },
-     });
+    const receiverTran = await TransactionModel.create({
+      account_id: receiverAcc._id,
+      tran_type: "credit",
+      amount,
+      status: "successful",
+      narration,
+      ref_id,
+      balance_before: receiver_balance_before,
+      balance_after: receiver_balance_after,
+      channel: "card",
+      meta_data: {
+        sender_bank: "Blink Pay Bank",
+        sender_acc_num: foundAccount.acc_number,
+      },
+    });
 
-     foundAccount.tran_history.push(senderTran);
-     receiverAcc.tran_history.push(receiverTran);
+    foundAccount.tran_history.push(senderTran);
+    receiverAcc.tran_history.push(receiverTran);
 
-     await foundAccount.save();
-     await receiverAcc.save();
+    await foundAccount.save();
+    await receiverAcc.save();
 
-     triggerSocketEvent("card_payment_successful", {transaction: senderTran});
-     
+    triggerSocketEvent("card_payment_successful", { transaction: senderTran });
 
     return {
       msg: "Card Payment was successful",
-      transaction: senderTran
+      transaction: senderTran,
+    };
+  }
+  static async showAccountInfo(body) {
+    let { account_number } = body;
+    account_number = Number(account_number);
+
+    const account_info = await AccountModel.findOne({
+      acc_number: account_number,
+    });
+    let virtual_account_info;
+    if (!account_info) {
+      virtual_account_info = await VirtualAccountModel.findOne({
+        acc_number: account_number,
+      });
+      if (!virtual_account_info) {
+        throw new ApiError(404, "Account Not Found!");
+      }
+    }
+    return {
+      msg: "Account found",
+      account_info: {
+        name: account_info?.name || virtual_account_info?.name,
+      },
     };
   }
 }
