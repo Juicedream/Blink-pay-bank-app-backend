@@ -945,7 +945,10 @@ class AccountService {
 
   static async cardPayment(body, account, card) {
     const { acc_number, acc_balance, _id: accountId, transfer_limit } = account;
-    let { pan_number, cvv, expiry_date, amount } = body;
+    let { pan_number, cvv, expiry_date, amount, payment_id } = body;
+
+    console.log(body);
+    
 
     amount = Number(amount);
     let narration = "Payment with card";
@@ -953,12 +956,47 @@ class AccountService {
     //if card sent is for the owner of the account. no debit transactions should take place only credit should show
     if (card) {
       const { card_pan, card_cvv, card_expiry } = card;
+        const user_account = await AccountModel.findOne({
+          acc_number: acc_number,
+        });
 
       if (amount >= transfer_limit) {
+        triggerSocketEvent("card_payment_failed", {
+          sender_account: {
+            name: user_account.name,
+            accountNumber: user_account.acc_number,
+            amount,
+          },
+          transaction: {
+            sender_name: user_account.name,
+            amount,
+            narration,
+            sender_id: user_account.userId,
+            receiver_id: user_account.userId,
+            payment_id,
+          },
+        });
         throw new ApiError(400, "Payment Limit Exceeded!");
       }
 
+
       if (acc_balance - amount <= 1000) {
+        triggerSocketEvent("card_payment_failed", {
+          sender_account: {
+            name: user_account.name,
+            accountNumber: user_account.acc_number,
+            amount,
+          },
+          transaction: {
+            sender_name: user_account.name,
+            amount,
+            narration,
+            sender_id: user_account.userId,
+            receiver_id: user_account.userId,
+            payment_id,
+          },
+        });
+     
         throw new ApiError(400, "Insufficient Funds!");
       }
 
@@ -973,9 +1011,7 @@ class AccountService {
         // console.log("Your card");
         // return({card});
 
-        const user_account = await AccountModel.findOne({
-          acc_number: acc_number,
-        });
+      
         const senderTran = await TransactionModel.create({
           account_id: accountId,
           tran_type: "debit",
@@ -1010,7 +1046,19 @@ class AccountService {
         user_account.tran_history.push(receiverTran._id);
         await user_account.save();
         triggerSocketEvent("card_payment_successful", {
-          transaction: senderTran,
+          sender_account: {
+            name: user_account.name,
+            accountNumber: user_account.acc_number,
+            amount,
+          },
+          transaction: {
+            sender_name: user_account.name,
+            amount,
+            narration,
+            sender_id: user_account.userId,
+            receiver_id: user_account.userId,
+            payment_id,
+          },
         });
 
         return {
@@ -1043,10 +1091,26 @@ class AccountService {
       throw new ApiError(404, "Card not found or Expired!");
     }
     let foundAccount = await AccountModel.findById(foundCard.accountId);
+    const receiverAcc = await AccountModel.findOne({ acc_number });
     if (amount >= foundAccount.transfer_limit) {
       throw new ApiError(400, "Payment Limit Exceeded!");
     }
     if (foundAccount.acc_balance - amount <= 1000) {
+         triggerSocketEvent("card_payment_failed", {
+           sender_account: {
+             name: foundAccount.name,
+             accountNumber: foundAccount.acc_number,
+             amount,
+           },
+           transaction: {
+             sender_name: foundAccount.name,
+             amount,
+             narration,
+             sender_id: foundAccount.userId,
+             receiver_id: receiverAcc.userId,
+            payment_id, 
+           },
+         });
       throw new ApiError(400, "Insufficient Funds!");
     }
 
@@ -1055,7 +1119,7 @@ class AccountService {
     let sender_balance_after = foundAccount.acc_balance;
 
     let receiver_balance_before = acc_balance;
-    const receiverAcc = await AccountModel.findOne({ acc_number });
+    
     receiverAcc.acc_balance += amount;
 
     let receiver_balance_after = receiverAcc.acc_balance;
@@ -1098,7 +1162,21 @@ class AccountService {
     await foundAccount.save();
     await receiverAcc.save();
 
-    triggerSocketEvent("card_payment_successful", { transaction: senderTran });
+  triggerSocketEvent("card_payment_successful", {
+    sender_account: {
+      name: foundAccount.name,
+      accountNumber: foundAccount.acc_number,
+      amount,
+    },
+    transaction: {
+      sender_name: foundAccount.name,
+      amount,
+      narration,
+      sender_id: foundAccount.userId,
+      receiver_id: receiverAcc.userId,
+      payment_id,
+    },
+  });
 
     return {
       msg: "Card Payment was successful",
