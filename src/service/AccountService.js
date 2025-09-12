@@ -113,7 +113,7 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration } = body;
+    let { receiver_acc_number, sender_pin, amount, narration, payment_id } = body;
     const { _id, name, email } = user;
 
     amount += TRANSFER_TAX;
@@ -179,6 +179,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
+          payment_id,
         },
       });
       throw new ApiError(400, `Insufficient Funds`);
@@ -220,10 +221,12 @@ class AccountService {
       transaction: {
         sender_name: senderAccount.name,
         amount,
-        receiver_acc_number: receiverAccount.acc_number || virtual_account.acc_number,
+        receiver_acc_number:
+          receiverAccount.acc_number || virtual_account.acc_number,
         narration,
         sender_id: senderAccount.userId,
         receiver_id: receiverAccount.userId || virtual_account.userId,
+        payment_id,
       },
     });
 
@@ -321,6 +324,7 @@ class AccountService {
           sender_name: senderAccount.name,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
+          payment_id,
         },
       });
 
@@ -484,6 +488,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
+          payment_id,
         },
       });
 
