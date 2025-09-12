@@ -32,6 +32,10 @@ const schema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    payment_id: {
+      type: String,
+      required: true,
+    },
   
     bank_name: {
       type: String,

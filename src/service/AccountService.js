@@ -113,7 +113,7 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration, payment_id } =
+    let { receiver_acc_number, sender_pin, amount, narration } =
       body;
     const { _id, name, email } = user;
 
@@ -132,6 +132,8 @@ class AccountService {
     const virtual_account = await VirtualAccountModel.findOne({
       acc_number: receiver_acc_number,
     });
+
+    let payment_id = virtual_account?.payment_id;
 
     if (senderAccount.acc_number === receiver_acc_number) {
       console.error("Receiver account cannot be your own account");
@@ -180,7 +182,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
-          payment_id,
+          payment_id
         },
       });
       throw new ApiError(400, `Insufficient Funds`);
@@ -725,7 +727,7 @@ class AccountService {
 
   static async createVirtualAccount(body, user, account) {
     const { _id, name } = user;
-    const { amount } = body;
+    const { amount, payment_id } = body;
     const EXPIRES_IN = 2; // mins
     const ACCOUNT_NAME = "Payverge_Checkout_" + name.slice(0, 2);
 
@@ -754,6 +756,7 @@ class AccountService {
       userId: _id,
       acc_number,
       amount: Number(amount) + TRANSFER_TAX,
+      payment_id,
       expiresAt: new Date(Date.now() + EXPIRES_IN * 60 * 1000), // expires in the expires_in minutes
     });
 
