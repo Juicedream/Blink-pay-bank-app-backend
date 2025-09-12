@@ -113,7 +113,8 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration, payment_id } = body;
+    let { receiver_acc_number, sender_pin, amount, narration, payment_id } =
+      body;
     const { _id, name, email } = user;
 
     amount += TRANSFER_TAX;
@@ -183,7 +184,6 @@ class AccountService {
         },
       });
       throw new ApiError(400, `Insufficient Funds`);
-      
     }
     if (amount < LEAST_AMOUNT) {
       console.error(
@@ -209,7 +209,6 @@ class AccountService {
     const main_bank = await AccountModel.findOne({
       acc_number: MAIN_BANK_ACCOUNT,
     });
-
 
     // actually initalized
     triggerSocketEvent("transfer_initialized", {
@@ -365,8 +364,7 @@ class AccountService {
       let actual_receiver = await AccountModel.findOne({
         userId: virtual_account.userId,
       });
-    
-     
+
       amount -= TRANSFER_TAX;
       if (amount !== virtual_account.amount) {
         await VirtualAccountModel.deleteOne({ userId: virtual_account.userId });
@@ -951,10 +949,9 @@ class AccountService {
   static async cardPayment(body, account, card) {
     const { acc_number, acc_balance, _id: accountId, transfer_limit } = account;
     let { pan_number, cvv, expiry_date, amount, payment_id } = body;
-   
 
     console.log(body);
-    
+    console.log(card)
 
     amount = Number(amount);
     let narration = "Payment with card";
@@ -962,25 +959,60 @@ class AccountService {
     //if card sent is for the owner of the account. no debit transactions should take place only credit should show
     if (card) {
       const { card_pan, card_cvv, card_expiry } = card;
-        const user_account = await AccountModel.findOne({
-          acc_number: acc_number,
-        });
-
+      const user_account = await AccountModel.findOne({
+        acc_number: acc_number,
+      });
 
       let decrypted_pan_number = decrypt(card_pan);
       let decrypted_cvv = decrypt(card_cvv);
-
-      
 
       if (
         pan_number === decrypted_pan_number &&
         cvv === decrypted_cvv &&
         card_expiry === expiry_date
       ) {
-        // console.log("Your card");
+        console.log("Your card");
         // return({card});
 
-      
+        if (amount >= transfer_limit) {
+          triggerSocketEvent("card_payment_failed", {
+            sender_account: {
+              name: user_account.name,
+              accountNumber: user_account.acc_number,
+              amount,
+            },
+            transaction: {
+              sender_name: user_account.name,
+              amount,
+              narration,
+              sender_id: user_account.userId,
+              receiver_id: user_account.userId,
+              payment_id,
+            },
+          });
+          throw new ApiError(400, "Payment Limit Exceeded!");
+        }
+
+        if (acc_balance - amount <= 1000) {
+          triggerSocketEvent("card_payment_failed", {
+            sender_account: {
+              name: user_account.name,
+              accountNumber: user_account.acc_number,
+              amount,
+            },
+            transaction: {
+              sender_name: user_account.name,
+              amount,
+              narration,
+              sender_id: user_account.userId,
+              receiver_id: user_account.userId,
+              payment_id,
+            },
+          });
+
+          throw new ApiError(400, "Insufficient Funds!");
+        }
+
         const senderTran = await TransactionModel.create({
           account_id: accountId,
           tran_type: "debit",
@@ -1035,7 +1067,6 @@ class AccountService {
           transaction: senderTran,
         };
       }
-
     }
 
     //if card sent is for another account then owner of transaction should be credited and card owner should be debited
@@ -1060,66 +1091,43 @@ class AccountService {
     if (!foundCard) {
       throw new ApiError(404, "Card not found or Expired!");
     }
-    
-      if (amount >= transfer_limit) {
-        triggerSocketEvent("card_payment_failed", {
-          sender_account: {
-            name: user_account.name,
-            accountNumber: user_account.acc_number,
-            amount,
-          },
-          transaction: {
-            sender_name: user_account.name,
-            amount,
-            narration,
-            sender_id: user_account.userId,
-            receiver_id: user_account.userId,
-            payment_id,
-          },
-        });
-        throw new ApiError(400, "Payment Limit Exceeded!");
-      }
 
-      if (acc_balance - amount <= 1000) {
-        triggerSocketEvent("card_payment_failed", {
-          sender_account: {
-            name: user_account.name,
-            accountNumber: user_account.acc_number,
-            amount,
-          },
-          transaction: {
-            sender_name: user_account.name,
-            amount,
-            narration,
-            sender_id: user_account.userId,
-            receiver_id: user_account.userId,
-            payment_id,
-          },
-        });
-
-        throw new ApiError(400, "Insufficient Funds!");
-      }
     let foundAccount = await AccountModel.findById(foundCard.accountId);
     const receiverAcc = await AccountModel.findOne({ acc_number });
     if (amount >= foundAccount.transfer_limit) {
+      triggerSocketEvent("card_payment_failed", {
+        sender_account: {
+          name: foundAccount.name,
+          accountNumber: foundAccount.acc_number,
+          amount,
+        },
+        transaction: {
+          sender_name: foundAccount.name,
+          amount,
+          narration,
+          sender_id: foundAccount.userId,
+          receiver_id: receiverAcc.userId,
+          payment_id,
+        },
+      });
       throw new ApiError(400, "Payment Limit Exceeded!");
     }
     if (foundAccount.acc_balance - amount <= 1000) {
-         triggerSocketEvent("card_payment_failed", {
-           sender_account: {
-             name: foundAccount.name,
-             accountNumber: foundAccount.acc_number,
-             amount,
-           },
-           transaction: {
-             sender_name: foundAccount.name,
-             amount,
-             narration,
-             sender_id: foundAccount.userId,
-             receiver_id: receiverAcc.userId,
-            payment_id, 
-           },
-         });
+      triggerSocketEvent("card_payment_failed", {
+        sender_account: {
+          name: foundAccount.name,
+          accountNumber: foundAccount.acc_number,
+          amount,
+        },
+        transaction: {
+          sender_name: foundAccount.name,
+          amount,
+          narration,
+          sender_id: foundAccount.userId,
+          receiver_id: receiverAcc.userId,
+          payment_id,
+        },
+      });
       throw new ApiError(400, "Insufficient Funds!");
     }
 
@@ -1128,7 +1136,7 @@ class AccountService {
     let sender_balance_after = foundAccount.acc_balance;
 
     let receiver_balance_before = acc_balance;
-    
+
     receiverAcc.acc_balance += amount;
 
     let receiver_balance_after = receiverAcc.acc_balance;
@@ -1171,21 +1179,21 @@ class AccountService {
     await foundAccount.save();
     await receiverAcc.save();
 
-  triggerSocketEvent("card_payment_successful", {
-    sender_account: {
-      name: foundAccount.name,
-      accountNumber: foundAccount.acc_number,
-      amount,
-    },
-    transaction: {
-      sender_name: foundAccount.name,
-      amount,
-      narration,
-      sender_id: foundAccount.userId,
-      receiver_id: receiverAcc.userId,
-      payment_id,
-    },
-  });
+    triggerSocketEvent("card_payment_successful", {
+      sender_account: {
+        name: foundAccount.name,
+        accountNumber: foundAccount.acc_number,
+        amount,
+      },
+      transaction: {
+        sender_name: foundAccount.name,
+        amount,
+        narration,
+        sender_id: foundAccount.userId,
+        receiver_id: receiverAcc.userId,
+        payment_id,
+      },
+    });
 
     return {
       msg: "Card Payment was successful",
@@ -1216,5 +1224,6 @@ class AccountService {
     };
   }
 }
+
 
 module.exports = AccountService;
