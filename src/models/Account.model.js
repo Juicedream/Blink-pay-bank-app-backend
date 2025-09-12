@@ -38,6 +38,10 @@ const schema = new mongoose.Schema(
       maxLength: 10
       
     },
+    otp: {
+      type: String,
+      maxLength: 6
+    },
     bvn: {
         type: String,
         minLength: 11,

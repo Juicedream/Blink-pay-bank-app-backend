@@ -12,6 +12,20 @@ router
   AuthValidation.loginUser,
   ValidationMiddleware,
   AuthController.loginUser);
+router
+.route("/passwordless-login").post(
+  AuthValidation.passwordlessLogin,
+  ValidationMiddleware,
+  AuthController.passwordlessLogin);
+router
+  .route("/verify-otp")
+  .post(
+    AuthValidation.verfiyOtp,
+    ValidationMiddleware,
+    AuthController.verfiyOtp
+  );
+
+
 
 router
   .route("/register")

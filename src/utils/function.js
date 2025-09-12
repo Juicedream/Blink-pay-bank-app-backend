@@ -104,6 +104,10 @@ function encrypt(text) {
   return decrypted;
 }
 
+function generateOtpCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 
 function generateCardExpiryDate(expiryMonth) {
   const now = new Date();
@@ -134,4 +138,5 @@ module.exports = {
   decrypt,
   generateCardExpiryDate,
   dbCardExpiryDate,
+  generateOtpCode
 };
