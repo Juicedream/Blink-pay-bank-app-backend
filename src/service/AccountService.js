@@ -175,8 +175,8 @@ class AccountService {
         transaction: {
           sender_name: senderAccount.name,
           amount,
-          receiver_acc_number:
-            receiverAccount.acc_number || actual_receiver.acc_number,
+          // receiver_acc_number:
+          //   receiverAccount.acc_number || actual_receiver.acc_number,
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
@@ -220,8 +220,8 @@ class AccountService {
       transaction: {
         sender_name: senderAccount.name,
         amount,
-        receiver_acc_number:
-          receiverAccount.acc_number || virtual_account.acc_number,
+        // receiver_acc_number:
+        //   receiverAccount.acc_number || virtual_account.acc_number,
         narration,
         sender_id: senderAccount.userId,
         receiver_id: receiverAccount.userId || virtual_account.userId,
@@ -318,7 +318,7 @@ class AccountService {
       triggerSocketEvent("money_received", {
         transaction: {
           amount: actual_amount,
-          receiver_acc_number: receiverAccount.acc_number,
+          // receiver_acc_number: receiverAccount.acc_number,
           narration,
           sender_name: senderAccount.name,
           sender_id: senderAccount.userId,
@@ -482,7 +482,7 @@ class AccountService {
         transaction: {
           sender_name: senderAccount.name,
           amount: actual_amount,
-          receiver_acc_number: actual_receiver.acc_number,
+          // receiver_acc_number: actual_receiver.acc_number,
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
