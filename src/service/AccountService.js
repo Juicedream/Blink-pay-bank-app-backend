@@ -951,6 +951,7 @@ class AccountService {
   static async cardPayment(body, account, card) {
     const { acc_number, acc_balance, _id: accountId, transfer_limit } = account;
     let { pan_number, cvv, expiry_date, amount, payment_id } = body;
+   
 
     console.log(body);
     
@@ -965,48 +966,11 @@ class AccountService {
           acc_number: acc_number,
         });
 
-      if (amount >= transfer_limit) {
-        triggerSocketEvent("card_payment_failed", {
-          sender_account: {
-            name: user_account.name,
-            accountNumber: user_account.acc_number,
-            amount,
-          },
-          transaction: {
-            sender_name: user_account.name,
-            amount,
-            narration,
-            sender_id: user_account.userId,
-            receiver_id: user_account.userId,
-            payment_id,
-          },
-        });
-        throw new ApiError(400, "Payment Limit Exceeded!");
-      }
-
-
-      if (acc_balance - amount <= 1000) {
-        triggerSocketEvent("card_payment_failed", {
-          sender_account: {
-            name: user_account.name,
-            accountNumber: user_account.acc_number,
-            amount,
-          },
-          transaction: {
-            sender_name: user_account.name,
-            amount,
-            narration,
-            sender_id: user_account.userId,
-            receiver_id: user_account.userId,
-            payment_id,
-          },
-        });
-     
-        throw new ApiError(400, "Insufficient Funds!");
-      }
 
       let decrypted_pan_number = decrypt(card_pan);
       let decrypted_cvv = decrypt(card_cvv);
+
+      
 
       if (
         pan_number === decrypted_pan_number &&
@@ -1071,6 +1035,7 @@ class AccountService {
           transaction: senderTran,
         };
       }
+
     }
 
     //if card sent is for another account then owner of transaction should be credited and card owner should be debited
@@ -1095,6 +1060,45 @@ class AccountService {
     if (!foundCard) {
       throw new ApiError(404, "Card not found or Expired!");
     }
+    
+      if (amount >= transfer_limit) {
+        triggerSocketEvent("card_payment_failed", {
+          sender_account: {
+            name: user_account.name,
+            accountNumber: user_account.acc_number,
+            amount,
+          },
+          transaction: {
+            sender_name: user_account.name,
+            amount,
+            narration,
+            sender_id: user_account.userId,
+            receiver_id: user_account.userId,
+            payment_id,
+          },
+        });
+        throw new ApiError(400, "Payment Limit Exceeded!");
+      }
+
+      if (acc_balance - amount <= 1000) {
+        triggerSocketEvent("card_payment_failed", {
+          sender_account: {
+            name: user_account.name,
+            accountNumber: user_account.acc_number,
+            amount,
+          },
+          transaction: {
+            sender_name: user_account.name,
+            amount,
+            narration,
+            sender_id: user_account.userId,
+            receiver_id: user_account.userId,
+            payment_id,
+          },
+        });
+
+        throw new ApiError(400, "Insufficient Funds!");
+      }
     let foundAccount = await AccountModel.findById(foundCard.accountId);
     const receiverAcc = await AccountModel.findOne({ acc_number });
     if (amount >= foundAccount.transfer_limit) {
