@@ -224,7 +224,7 @@ class AccountService {
         //   receiverAccount.acc_number || virtual_account.acc_number,
         narration,
         sender_id: senderAccount.userId,
-        receiver_id: receiverAccount?.userId || virtual_account?.userId,
+        receiver_id: receiverAccount.userId || virtual_account.userId,
         payment_id,
       },
     });
@@ -487,7 +487,7 @@ class AccountService {
           // receiver_acc_number: actual_receiver.acc_number,
           narration,
           sender_id: senderAccount.userId,
-          receiver_id: receiverAccount.userId || virtual_account.userId,
+          receiver_id: actual_receiver.userId || virtual_account.userId,
           payment_id,
         },
       });
