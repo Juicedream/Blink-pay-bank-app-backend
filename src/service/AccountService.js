@@ -165,7 +165,24 @@ class AccountService {
 
     if (senderAccount.acc_balance < LEAST_AMOUNT) {
       console.error(`Insufficient Funds`);
+      triggerSocketEvent("transfer_failed", {
+        sender_account: {
+          name: senderAccount.name,
+          accountNumber: senderAccount.acc_number,
+          amount,
+        },
+        transaction: {
+          sender_name: senderAccount.name,
+          amount,
+          receiver_acc_number:
+            receiverAccount.acc_number || actual_receiver.acc_number,
+          narration,
+          sender_id: senderAccount.userId,
+          receiver_id: receiverAccount.userId || virtual_account.userId,
+        },
+      });
       throw new ApiError(400, `Insufficient Funds`);
+      
     }
     if (amount < LEAST_AMOUNT) {
       console.error(
@@ -188,16 +205,26 @@ class AccountService {
       );
     }
 
-    //actually send
+    const main_bank = await AccountModel.findOne({
+      acc_number: MAIN_BANK_ACCOUNT,
+    });
+
+
+    // actually initalized
     triggerSocketEvent("transfer_initialized", {
       sender_account: {
         name: senderAccount.name,
         accountNumber: senderAccount.acc_number,
         amount,
       },
-    });
-    const main_bank = await AccountModel.findOne({
-      acc_number: MAIN_BANK_ACCOUNT,
+      transaction: {
+        sender_name: senderAccount.name,
+        amount,
+        receiver_acc_number: receiverAccount.acc_number || virtual_account.acc_number,
+        narration,
+        sender_id: senderAccount.userId,
+        receiver_id: receiverAccount.userId || virtual_account.userId,
+      },
     });
 
     if (receiverAccount) {
@@ -292,6 +319,8 @@ class AccountService {
           receiver_acc_number: receiverAccount.acc_number,
           narration,
           sender_name: senderAccount.name,
+          sender_id: senderAccount.userId,
+          receiver_id: receiverAccount.userId || virtual_account.userId,
         },
       });
 
@@ -332,6 +361,8 @@ class AccountService {
       let actual_receiver = await AccountModel.findOne({
         userId: virtual_account.userId,
       });
+    
+     
       amount -= TRANSFER_TAX;
       if (amount !== virtual_account.amount) {
         await VirtualAccountModel.deleteOne({ userId: virtual_account.userId });
@@ -451,6 +482,8 @@ class AccountService {
           amount: actual_amount,
           receiver_acc_number: actual_receiver.acc_number,
           narration,
+          sender_id: senderAccount.userId,
+          receiver_id: receiverAccount.userId || virtual_account.userId,
         },
       });
 
