@@ -229,7 +229,7 @@ class AccountService {
       },
     });
 
-    return;
+    
 
     if (receiverAccount) {
       let sender_balance_before = senderAccount.acc_balance;
