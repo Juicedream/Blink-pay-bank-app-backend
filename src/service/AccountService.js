@@ -113,8 +113,7 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration } =
-      body;
+    let { receiver_acc_number, sender_pin, amount, narration } = body;
     const { _id, name, email } = user;
 
     amount += TRANSFER_TAX;
@@ -134,6 +133,25 @@ class AccountService {
     });
 
     let payment_id = virtual_account?.payment_id;
+
+    // actually initalized
+    triggerSocketEvent("transfer_initialized", {
+      sender_account: {
+        name: senderAccount.name,
+        accountNumber: senderAccount.acc_number,
+        amount,
+      },
+      transaction: {
+        sender_name: senderAccount.name,
+        amount,
+        // receiver_acc_number:
+        //   receiverAccount.acc_number || virtual_account.acc_number,
+        narration,
+        sender_id: senderAccount.userId,
+        receiver_id: receiverAccount?.userId || virtual_account?.userId,
+        payment_id,
+      },
+    });
 
     if (senderAccount.acc_number === receiver_acc_number) {
       console.error("Receiver account cannot be your own account");
@@ -182,7 +200,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
-          payment_id
+          payment_id,
         },
       });
       throw new ApiError(400, `Insufficient Funds`);
@@ -199,6 +217,25 @@ class AccountService {
 
     let amount_left = senderAccount.acc_balance - amount;
     if (amount_left < LEAST_AMOUNT) {
+      // actually initalized
+      triggerSocketEvent("transfer_failed", {
+        sender_account: {
+          name: senderAccount.name,
+          accountNumber: senderAccount.acc_number,
+          amount,
+        },
+        transaction: {
+          sender_name: senderAccount.name,
+          amount,
+          // receiver_acc_number:
+          //   receiverAccount.acc_number || virtual_account.acc_number,
+          narration,
+          sender_id: senderAccount.userId,
+          receiver_id: receiverAccount?.userId || virtual_account?.userId,
+          payment_id,
+        },
+      });
+
       console.error(
         `₦${LEAST_AMOUNT.toLocaleString()} must be left in the account`
       );
@@ -211,27 +248,6 @@ class AccountService {
     const main_bank = await AccountModel.findOne({
       acc_number: MAIN_BANK_ACCOUNT,
     });
-
-    // actually initalized
-    triggerSocketEvent("transfer_initialized", {
-      sender_account: {
-        name: senderAccount.name,
-        accountNumber: senderAccount.acc_number,
-        amount,
-      },
-      transaction: {
-        sender_name: senderAccount.name,
-        amount,
-        // receiver_acc_number:
-        //   receiverAccount.acc_number || virtual_account.acc_number,
-        narration,
-        sender_id: senderAccount.userId,
-        receiver_id: receiverAccount?.userId || virtual_account?.userId,
-        payment_id,
-      },
-    });
-
-    
 
     if (receiverAccount) {
       let sender_balance_before = senderAccount.acc_balance;
