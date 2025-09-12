@@ -25,8 +25,6 @@ router
     AuthController.verfiyOtp
   );
 
-
-
 router
   .route("/register")
   .post(

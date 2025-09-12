@@ -62,9 +62,11 @@ class AuthService {
       throw new ApiError(400, "Invalid Otp");
     }
 
+
+    const userAccount = await UserModel.findOne({email});
     
 
-    const token = JWTService.generateToken(check_exist._id);
+    const token = JWTService.generateToken(userAccount._id);
 
     check_exist.otp = "";
     await check_exist.save();
