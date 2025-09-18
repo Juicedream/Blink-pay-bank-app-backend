@@ -16,10 +16,12 @@ app.use(express.json());
 
 const allowedOrigins = [
   "https://blink-pay.vercel.app", // production
+  "https://payment-gateway-3.onrender.com", //payverge prod backend
   /^http:\/\/localhost:\d+$/, // allow any localhost port
   "https://payverge.netlify.app", // staging
   /^http:\/\/127\.0\.0\.1:\d+$/, // allow 127.0.0.1 ports
   /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // allow LAN IPs (teammates in dev)
+
 ];
 
 app.use(
