@@ -67,7 +67,7 @@ class AccountValidation {
 
   static virtualAccount = [
     body("amount").notEmpty().withMessage("Amount is required"),
-    body("payment_id").notEmpty().withMessage("Amount is required"),
+    body("payment_id").notEmpty().withMessage("Payment ID is required"),
   ];
 
   static createDigitalCard = [
