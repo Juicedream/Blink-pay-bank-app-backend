@@ -14,6 +14,9 @@ const schema = new mongoose.Schema(
       trim: true,
       lower: true,
     },
+    payment_id: {
+      type: String,
+    },
     amount: {
       type: Number,
       required: true,

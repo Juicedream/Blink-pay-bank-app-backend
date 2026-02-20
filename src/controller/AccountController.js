@@ -1,6 +1,5 @@
 const AccountService = require("../service/AccountService");
 
-
 class AccountController {
   static async createAccount(req, res) {
     const user = req.user;
@@ -18,6 +17,12 @@ class AccountController {
     const user = req.user;
     const res_obj = await AccountService.singleTransfer(req.body, user);
     res.status(200).send(res_obj);  
+  }
+
+  static async getTransactionDetails(req, res) {
+    const account = req.account;
+    const res_obj = await AccountService.transactionDetails(req.query, account);
+    res.status(200).send(res_obj);
   }
 
   static async bulkTransfer(req, res){

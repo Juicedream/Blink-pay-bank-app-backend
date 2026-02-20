@@ -81,14 +81,20 @@ class AccountService {
     let age = getAge(birth_date);
     let acc_number = generateAccountNumber(acc_type);
     let year = new Date().getFullYear();
+    let userAccount;
 
-    // create account and user account
-    const userAccount = await UserModel.create({
-      name,
-      email,
-      acc_type,
-      password: `newAccount${year}`,
-    });
+    //check if email exists in the user db
+    const userExists = await UserModel.findOne({ email });
+    if (userExists.email !== email) {
+      // create user 
+      userAccount = await UserModel.create({
+        name,
+        email,
+        acc_type,
+        password: `newAccount${year}`,
+      });
+    }
+    // create account for user
     const newAccount = await AccountModel.create({
       name,
       email,
@@ -99,7 +105,7 @@ class AccountService {
       birth_date,
       bvn,
       docs_upload,
-      userId: userAccount._id,
+      userId: userAccount?._id || userExists?._id,
       acc_number,
       created_by: creator_name,
     });
@@ -107,7 +113,7 @@ class AccountService {
     return {
       msg: acc_type + " account registered successfully",
       account: newAccount,
-      user: userAccount,
+      user: userAccount ? userAccount : userExists,
     };
 
     // return {user}
@@ -118,6 +124,8 @@ class AccountService {
 
     amount += TRANSFER_TAX;
     console.log({ amount });
+
+    const ref_id = generateRefId();
 
     //retreive sender account number
     console.log("retreiving sender account details from logged in user");
@@ -174,11 +182,11 @@ class AccountService {
     console.log("Checking Transaction limit");
     if (amount > senderAccount.transfer_limit) {
       console.error(
-        `Amount cannot be greater than ₦${senderAccount.transfer_limit.toLocaleString()}`
+        `Amount cannot be greater than ₦${senderAccount.transfer_limit.toLocaleString()}`,
       );
       throw new ApiError(
         400,
-        `Amount cannot be greater than ₦${senderAccount.transfer_limit.toLocaleString()}`
+        `Amount cannot be greater than ₦${senderAccount.transfer_limit.toLocaleString()}`,
       );
     }
 
@@ -207,11 +215,11 @@ class AccountService {
     }
     if (amount < LEAST_AMOUNT) {
       console.error(
-        `Amount cannot be lesser than ₦${LEAST_AMOUNT.toLocaleString()}`
+        `Amount cannot be lesser than ₦${LEAST_AMOUNT.toLocaleString()}`,
       );
       throw new ApiError(
         400,
-        `Amount cannot be lesser than ₦${LEAST_AMOUNT.toLocaleString()}`
+        `Amount cannot be lesser than ₦${LEAST_AMOUNT.toLocaleString()}`,
       );
     }
 
@@ -237,11 +245,11 @@ class AccountService {
       });
 
       console.error(
-        `₦${LEAST_AMOUNT.toLocaleString()} must be left in the account`
+        `₦${LEAST_AMOUNT.toLocaleString()} must be left in the account`,
       );
       throw new ApiError(
         400,
-        `₦${LEAST_AMOUNT.toLocaleString()} must be left in the account`
+        `₦${LEAST_AMOUNT.toLocaleString()} must be left in the account`,
       );
     }
 
@@ -270,11 +278,13 @@ class AccountService {
         tran_type: "credit",
         amount: TRANSFER_TAX,
         currency: "NGN",
+        payment_id,
         status: "successful",
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
         channel: "web",
+        ref_id,
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -292,6 +302,8 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         narration,
+        payment_id,
+        ref_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
         channel: "web",
@@ -312,6 +324,8 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         narration,
+        payment_id,
+        ref_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
         channel: "web",
@@ -390,7 +404,7 @@ class AccountService {
         await VirtualAccountModel.deleteOne({ userId: virtual_account.userId });
         throw new ApiError(
           401,
-          `Error wrong amount: ${amount} provided instead of ${virtual_account.amount}`
+          `Error wrong amount: ${amount} provided instead of ${virtual_account.amount}`,
         );
       }
       let sender_balance_before = senderAccount.acc_balance;
@@ -400,8 +414,6 @@ class AccountService {
       main_bank.acc_balance += TRANSFER_TAX;
 
       let main_bank_balance_after = main_bank.acc_balance;
-
-      const ref_id = generateRefId();
 
       let actual_amount = amount - TRANSFER_TAX;
       if (senderAccount.acc_number !== actual_receiver.acc_number) {
@@ -424,6 +436,7 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         ref_id,
+        payment_id,
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
@@ -446,6 +459,7 @@ class AccountService {
         status: "successful",
         narration,
         ref_id,
+        payment_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
         channel: "web",
@@ -467,6 +481,7 @@ class AccountService {
         status: "successful",
         narration,
         ref_id,
+        payment_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
         channel: "web",
@@ -537,6 +552,40 @@ class AccountService {
       };
     }
   }
+  static async transactionDetails(query, account) {
+    let { payment_id, account_number } = query;
+    const { _id: id } = account;
+    console.log(id);
+
+    let fetchTranDetails;
+
+    if (payment_id) // PAYMENT ID LOGIC
+    {
+      if (!payment_id.includes("-")) {
+        throw new ApiError(400, "Invalid Payment ID");
+      }
+      fetchTranDetails = await TransactionModel.findOne({ payment_id });
+      if (!fetchTranDetails) {
+        throw new ApiError(404, "No transaction found");
+      }
+    } else if (account_number) {
+      // ACCOUNT NUMBER LOGIC
+      if (account_number.includes("-") || isNaN(account_number)) {
+        throw new ApiError(400, "Invalid Account number");
+      }
+      let account = await AccountModel.findById(id);
+      if (account.acc_number !== Number(account_number)) {
+        throw new ApiError(401, "You cannot check this account");
+      }
+      fetchTranDetails = await TransactionModel.find({ account_id: id });
+    } else {
+      throw new ApiError(400, "Payment ID or Account Number is required");
+    }
+
+    return {
+      transactions: fetchTranDetails,
+    };
+  }
   static async bulkTransfer(body, user, account) {
     let { receiver_acc_numbers, sender_pin, amount, narration } = body;
     const { _id, name, email } = user;
@@ -560,7 +609,7 @@ class AccountService {
     if (total_amount_to_be_debited > transfer_limit) {
       throw new ApiError(
         400,
-        `Total Amount should not be greater than ₦${transfer_limit.toLocaleString()}`
+        `Total Amount should not be greater than ₦${transfer_limit.toLocaleString()}`,
       );
     }
 
@@ -570,7 +619,7 @@ class AccountService {
     if (preDebit < LEAST_AMOUNT) {
       throw new ApiError(
         400,
-        `Invalid Request - ₦${LEAST_AMOUNT.toLocaleString()} should be left in the account`
+        `Invalid Request - ₦${LEAST_AMOUNT.toLocaleString()} should be left in the account`,
       );
     }
 
@@ -584,14 +633,14 @@ class AccountService {
     const same_with_sender = accounts.filter((acc) => acc === acc_number);
     const valid_accounts = all_accounts.map((acc) => acc.acc_number);
     const invalid_accounts = accounts.filter(
-      (acc) => !valid_accounts.includes(acc)
+      (acc) => !valid_accounts.includes(acc),
     );
 
     if (same_with_sender[0] === acc_number) {
       throw new ApiError(
         400,
         "Receiver account numbers must not contain your account number: " +
-          same_with_sender
+          same_with_sender,
       );
     }
 
@@ -599,8 +648,8 @@ class AccountService {
       throw new ApiError(
         404,
         `Not Found - The following account number(s) are invalid: ${invalid_accounts.join(
-          ","
-        )}`
+          ",",
+        )}`,
       );
     }
 
@@ -610,7 +659,7 @@ class AccountService {
     try {
       //debit from sender
       const sender = await AccountModel.findOne({ acc_number }).session(
-        session
+        session,
       );
       const ref_id = generateRefId();
       const sender_balance_before = sender.acc_balance;
@@ -681,7 +730,7 @@ class AccountService {
       for (const acc of valid_accounts) {
         console.log({ acc, valid_accounts });
         const account = await AccountModel.findOne({ acc_number: acc }).session(
-          session
+          session,
         );
 
         const balance_before = account.acc_balance;
@@ -750,7 +799,7 @@ class AccountService {
     if (amount < LEAST_AMOUNT) {
       throw new ApiError(
         400,
-        `Amount must be at least ₦${LEAST_AMOUNT.toLocaleString()}`
+        `Amount must be at least ₦${LEAST_AMOUNT.toLocaleString()}`,
       );
     }
 
@@ -762,7 +811,7 @@ class AccountService {
         400,
         "Cannot create new virtual account - " +
           existing_v_acc.name +
-          " has already been generated on your account!"
+          " has already been generated on your account!",
       );
     }
     const acc_number = generateVirtualAccountNumber();
@@ -798,7 +847,7 @@ class AccountService {
     if (hasCard) {
       throw new ApiError(
         400,
-        "Can't create a new card - You already have a card"
+        "Can't create a new card - You already have a card",
       );
     }
 
@@ -972,7 +1021,7 @@ class AccountService {
     let { pan_number, cvv, expiry_date, amount, payment_id } = body;
 
     console.log(body);
-    console.log(card)
+    console.log(card);
 
     amount = Number(amount);
     let narration = "Payment with card";
@@ -1245,6 +1294,5 @@ class AccountService {
     };
   }
 }
-
 
 module.exports = AccountService;

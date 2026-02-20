@@ -28,6 +28,10 @@ router
   router
   .route("/single-transfer")
   .post(AccountValidation.singleTransfer, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.singleTransfer)
+  
+  router
+  .route("/transactions")
+  .get(AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.getTransactionDetails)
 
   router
   .route("/bulk-transfer")
