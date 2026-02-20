@@ -102,13 +102,16 @@ class AuthService {
     };
   }
 
-  static async profileUser(_id){
-    const found_user = await UserModel.findById(_id).select("name email acc_type createdAt -_id");
-    const found_account = await AccountModel.findOne({userId: _id})
-    const card = await CardModel.findOne({accountId: found_account._id})
-    if(!found_user){
-      throw new ApiError(401, "Profile Not Found")
+  static async profileUser(user){
+    const found_user = await UserModel.findById(user._id).select("name email acc_type createdAt -_id");
+    if (!found_user) {
+      throw new ApiError(404, "User Profile not found");
     }
+    const found_account = await AccountModel.findOne({userId: user._id})
+    if (!found_account) {
+      throw new ApiError(404, "User Account not created yet");
+    }
+    const card = await CardModel.findOne({accountId: found_account._id})
     
     let all_user_transactions = await TransactionModel.find({account_id: found_account._id})
 

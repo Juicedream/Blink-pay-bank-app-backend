@@ -16,7 +16,8 @@ const AuthMiddleware = async(req, res, next) => {
         }
         const payload = JWTService.validateToken(token)
         // get users details from db
-        const user = await UserModel.findById(payload.user)
+        const user = await UserModel.findById(payload._id)
+
         console.log(user)
            
         req.user = user;
