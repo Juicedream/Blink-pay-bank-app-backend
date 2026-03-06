@@ -4,6 +4,7 @@ const ValidationMiddleware = require("../../middleware/ValidationMiddleware");
 const AuthMiddleware = require("../../middleware/AuthMiddleware");
 const AccountController = require("../../controller/AccountController");
 const AccountMiddleware = require("../../middleware/AccountMiddleware");
+const ExternalAuthMiddleware = require("../../middleware/ExternalAuthMiddleware");
 const router = express.Router();
 
 // create account for logged in user
@@ -49,6 +50,10 @@ router
   .route("/pay-with-card")
   .post(AccountValidation.cardPayment, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.cardPayment)
   
+   router
+  .route("/card-payment-external")
+  .post(AccountValidation.cardPayment, ExternalAuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.cardPayment);
+
   router
   .route("/delete-card")
   .post(AccountValidation.deleteCard, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.deleteCard)

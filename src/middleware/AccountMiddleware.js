@@ -10,7 +10,9 @@ const AccountMiddleware = async (req, res, next) => {
     const hasCard = await CardModel.findOne({accountId: hasAccount._id})
 
     req.account = hasAccount;
-    req.card = hasCard;
+    if (hasCard) {
+        req.card = hasCard;
+    }
     next();
 
 }
