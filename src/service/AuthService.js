@@ -26,6 +26,7 @@ class AuthService {
 
     return {
       msg: "Login Successful" + "! Welcome back " + check_exist.name,
+      user: check_exist,
       token
     }
   }
