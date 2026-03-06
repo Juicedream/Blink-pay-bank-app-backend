@@ -23,10 +23,12 @@ class AuthService {
     }
 
     const token = JWTService.generateToken(check_exist._id);
+    const account = await AccountModel.findOne({email});
 
     return {
       msg: "Login Successful" + "! Welcome back " + check_exist.name,
       user: check_exist,
+      account,
       token
     }
   }
@@ -75,6 +77,8 @@ class AuthService {
     return {
       msg: "Login Successful" + "! Welcome back " + check_exist.name,
       token,
+      user: userAccount,
+      account: check_exist,
     };
   }
   static async registerUser(body) {
