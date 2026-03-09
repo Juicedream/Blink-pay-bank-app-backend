@@ -119,11 +119,12 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration } = body;
+    let { receiver_acc_number, sender_pin, amount, narration, type } = body;
     const { _id, name, email } = user;
 
     amount += TRANSFER_TAX;
     console.log({ amount });
+    
 
     const ref_id = generateRefId();
 
@@ -283,7 +284,7 @@ class AccountService {
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
-        channel: "web",
+        channel: type? "mobile": "web",
         ref_id,
         meta_data: {
           recipient_bank: "Blinkpay Bank",
@@ -306,7 +307,7 @@ class AccountService {
         ref_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
-        channel: "web",
+        channel: type? "mobile": "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -328,7 +329,7 @@ class AccountService {
         ref_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
-        channel: "web",
+        channel: type ? "mobile": "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -440,7 +441,7 @@ class AccountService {
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
-        channel: "web",
+        channel: type ? "mobile" : "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: actual_receiver.acc_number,
@@ -462,7 +463,7 @@ class AccountService {
         payment_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
-        channel: "web",
+        channel: type ? "mobile" : "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -484,7 +485,7 @@ class AccountService {
         payment_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
-        channel: "web",
+        channel: type ? "mobile" : "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: actual_receiver.acc_number,
