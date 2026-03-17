@@ -1307,7 +1307,7 @@ class AccountService {
     let payload = [
       { data: String(amount), mode: "Alphanumeric" },
       { data: "+" + String(email), mode: "byte" },
-      { data: "+" + String(acc_number), mode: "numeric" },
+      { data: "+" + String(acc_number), mode: "Alphanumeric" },
     ];
     await new Promise((resolve, reject) => {
       QRCode.toDataURL(payload, function (err, url) {
