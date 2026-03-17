@@ -69,12 +69,13 @@ class AccountController {
     res.status(200).send(res_obj);
   }
 
-
+  static async generateQrCode(req, res) {
+    const user = req.user;
+    const account = req.account;
+    const res_obj = await AccountService.generateQrCode(req.query, user, account);
+    res.status(201).send(res_obj);
+  }
   
-
-
-
-
 
 
   static async changePin(req, res) {

@@ -3,6 +3,7 @@ const { AccountModel } = require("../models/Account.model");
 const { TransactionModel } = require("../models/Transaction.model");
 const { UserModel } = require("../models/User.model");
 const ApiError = require("../utils/ApiError");
+const QRCode = require("qrcode");
 
 const {
   getAge,
@@ -86,7 +87,7 @@ class AccountService {
     //check if email exists in the user db
     const userExists = await UserModel.findOne({ email });
     if (userExists.email !== email) {
-      // create user 
+      // create user
       userAccount = await UserModel.create({
         name,
         email,
@@ -124,7 +125,6 @@ class AccountService {
 
     amount += TRANSFER_TAX;
     console.log({ amount });
-    
 
     const ref_id = generateRefId();
 
@@ -284,7 +284,7 @@ class AccountService {
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
-        channel: type? "mobile": "web",
+        channel: type ? "mobile" : "web",
         ref_id,
         meta_data: {
           recipient_bank: "Blinkpay Bank",
@@ -307,7 +307,7 @@ class AccountService {
         ref_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
-        channel: type? "mobile": "web",
+        channel: type ? "mobile" : "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -329,7 +329,7 @@ class AccountService {
         ref_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
-        channel: type ? "mobile": "web",
+        channel: type ? "mobile" : "web",
         meta_data: {
           recipient_bank: "Blinkpay Bank",
           recipient_acc_num: receiver_acc_number,
@@ -1293,6 +1293,35 @@ class AccountService {
         name: account_info?.name || virtual_account_info?.name,
       },
     };
+  }
+  static async generateQrCode(query, user) {
+    const { amount } = query;
+    if (!amount || isNaN(amount)) {
+      throw new ApiError(400, "Amount is required or invalid");
+    }
+    const { email } = user;
+    let qrCode;
+    let error;
+
+    let payload = [
+      { data: String(amount), mode: "numeric" },
+      { data: String(email), mode: "byte" },
+    ];
+    await new Promise((resolve, reject) => {
+      QRCode.toDataURL(payload, function (err, url) {
+        if (err) {
+          error = err.message;
+          reject(err);
+        } else {
+          qrCode = url;
+          resolve(url)
+        }
+      });
+    })
+    if (error) {
+      throw new ApiError(500, error);
+    }
+    return { qrCode, msg: "QR Code Generated Successfully" };
   }
 }
 

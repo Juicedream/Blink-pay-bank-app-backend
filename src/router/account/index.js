@@ -50,6 +50,9 @@ router
   .route("/pay-with-card")
   .post(AccountValidation.cardPayment, AuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.cardPayment)
   
+  router
+  .route("/generate-qrcode-payment")
+  .post(ExternalAuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.generateQrCode)
    router
   .route("/card-payment-external")
   .post(AccountValidation.cardPayment, ExternalAuthMiddleware, ValidationMiddleware, AccountMiddleware, AccountController.cardPayment);
