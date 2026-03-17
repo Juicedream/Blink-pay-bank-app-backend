@@ -1304,7 +1304,7 @@ class AccountService {
     let error;
 
     let payload = [
-      { data: String(amount), mode: "numeric" },
+      { data: String(amount), mode: "Alphanumeric" },
       { data: String(email), mode: "byte" },
     ];
     await new Promise((resolve, reject) => {
