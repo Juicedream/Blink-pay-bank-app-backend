@@ -120,7 +120,7 @@ class AccountService {
     // return {user}
   }
   static async singleTransfer(body, user) {
-    let { receiver_acc_number, sender_pin, amount, narration, type } = body;
+    let { receiver_acc_number, sender_pin, amount, narration, type, payId } = body;
     const { _id, name, email } = user;
 
     amount += TRANSFER_TAX;
@@ -158,7 +158,7 @@ class AccountService {
         narration,
         sender_id: senderAccount.userId,
         receiver_id: receiverAccount?.userId || virtual_account?.userId,
-        payment_id,
+        payment_id: payment_id || payId,
       },
     });
 
@@ -209,7 +209,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
-          payment_id,
+          payment_id : payment_id || payId,
         },
       });
       throw new ApiError(400, `Insufficient Funds`);
@@ -241,7 +241,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount?.userId || virtual_account?.userId,
-          payment_id,
+          payment_id: payment_id || payId,
         },
       });
 
@@ -279,7 +279,7 @@ class AccountService {
         tran_type: "credit",
         amount: TRANSFER_TAX,
         currency: "NGN",
-        payment_id,
+        payment_id: payment_id || payId,
         status: "successful",
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
@@ -303,7 +303,7 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         narration,
-        payment_id,
+        payment_id: payment_id || payId,
         ref_id,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
@@ -325,7 +325,7 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         narration,
-        payment_id,
+        payment_id: payment_id || payId,
         ref_id,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
@@ -358,7 +358,7 @@ class AccountService {
           sender_name: senderAccount.name,
           sender_id: senderAccount.userId,
           receiver_id: receiverAccount.userId || virtual_account.userId,
-          payment_id,
+          payment_id: payment_id || payId,
         },
       });
 
@@ -437,7 +437,7 @@ class AccountService {
         currency: "NGN",
         status: "successful",
         ref_id,
-        payment_id,
+        payment_id: payment_id || payId,
         narration: `Transfer tax for ${name}`,
         balance_before: main_bank_balance_before,
         balance_after: main_bank_balance_after,
@@ -460,7 +460,7 @@ class AccountService {
         status: "successful",
         narration,
         ref_id,
-        payment_id,
+        payment_id: payment_id || payId,
         balance_before: sender_balance_before,
         balance_after: sender_balance_after,
         channel: type ? "mobile" : "web",
@@ -482,7 +482,7 @@ class AccountService {
         status: "successful",
         narration,
         ref_id,
-        payment_id,
+        payment_id: payment_id || payId,
         balance_before: receiver_balance_before,
         balance_after: receiver_balance_after,
         channel: type ? "mobile" : "web",
@@ -522,7 +522,7 @@ class AccountService {
           narration,
           sender_id: senderAccount.userId,
           receiver_id: actual_receiver.userId || virtual_account.userId,
-          payment_id,
+          payment_id: payment_id || payId,
         },
       });
 
@@ -541,9 +541,11 @@ class AccountService {
       //   email: actual_receiver.email,
       //   transactionId: recieverTransaction._id,
       // });
+      
       await VirtualAccountModel.deleteOne({
         userId: virtual_account.userId,
       });
+
       console.log("✅ Transfer to Virtual account was successfull", {
         amount_left,
       });
