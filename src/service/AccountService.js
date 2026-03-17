@@ -541,7 +541,7 @@ class AccountService {
       //   email: actual_receiver.email,
       //   transactionId: recieverTransaction._id,
       // });
-      
+
       await VirtualAccountModel.deleteOne({
         userId: virtual_account.userId,
       });
@@ -1297,9 +1297,12 @@ class AccountService {
     };
   }
   static async generateQrCode(query, user, account) {
-    const { amount } = query;
+    const { amount, payId } = query;
     if (!amount || isNaN(amount)) {
       throw new ApiError(400, "Amount is required or invalid");
+    }
+    if (!payId) {
+      throw new ApiError(400, "Payment ID is required");
     }
     const { email } = user;
     const {acc_number} = account;
@@ -1310,6 +1313,7 @@ class AccountService {
       { data: String(amount), mode: "Alphanumeric" },
       { data: "+" + String(email), mode: "byte" },
       { data: "+" + String(acc_number), mode: "Alphanumeric" },
+      { data: "+" + String(payId), mode: "byte" },
     ];
     await new Promise((resolve, reject) => {
       QRCode.toDataURL(payload, function (err, url) {
