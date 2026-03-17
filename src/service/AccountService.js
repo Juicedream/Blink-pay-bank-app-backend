@@ -1294,18 +1294,20 @@ class AccountService {
       },
     };
   }
-  static async generateQrCode(query, user) {
+  static async generateQrCode(query, user, account) {
     const { amount } = query;
     if (!amount || isNaN(amount)) {
       throw new ApiError(400, "Amount is required or invalid");
     }
     const { email } = user;
+    const {acc_number} = account;
     let qrCode;
     let error;
 
     let payload = [
       { data: String(amount), mode: "Alphanumeric" },
       { data: "+" + String(email), mode: "byte" },
+      { data: "+" + String(acc_number), mode: "numeric" },
     ];
     await new Promise((resolve, reject) => {
       QRCode.toDataURL(payload, function (err, url) {

@@ -15,7 +15,8 @@ class AccountController {
 
   static async singleTransfer(req, res){
     const user = req.user;
-    const res_obj = await AccountService.singleTransfer(req.body, user);
+    const account = req.account;
+    const res_obj = await AccountService.singleTransfer(req.body, user, account);
     res.status(200).send(res_obj);  
   }
 
